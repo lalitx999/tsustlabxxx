@@ -100,6 +100,13 @@ def save_promo(data: dict, promo: PromoCode | None = None) -> PromoCode:
     code = cleaned.get('code')
     if code and PromoCode.objects.filter(code__iexact=code).exclude(pk=getattr(promo, 'pk', None)).exists():
         raise ServiceError('โค้ดนี้มีอยู่แล้ว')
+    if promo is not None:
+        # An edit may send only one of the two fields; check the combination that will be saved.
+        kind = cleaned.get('discount_type', promo.discount_type)
+        if kind == 'percentage' and cleaned.get('discount_value', promo.discount_value) > 100:
+            raise ServiceError('ส่วนลดเปอร์เซ็นต์ต้องไม่เกิน 100')
+    if cleaned.get('usage_limit') is not None and cleaned['usage_limit'] < 1:
+        raise ServiceError('จำนวนสิทธิ์ต้องมากกว่า 0')
     if promo is None:
         if 'code' not in cleaned or 'discount_value' not in cleaned:
             raise ServiceError('กรุณาระบุโค้ดและมูลค่าส่วนลด')

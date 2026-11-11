@@ -16,9 +16,25 @@ def _password(password, user):
         raise ServiceError(' '.join(exc.messages))
 
 
+def _check_target(user, actor) -> None:
+    """Which accounts the Users page may change.
+
+    - only staff accounts (customer logins are managed from the member side);
+    - a superuser (who can open /django-admin/) only by another superuser, so an
+      'admin' role cannot take over a superuser by resetting its password.
+    """
+    if user is None or actor is None:
+        return
+    if user.role not in STAFF_ROLES and not user.is_superuser:
+        raise ServiceError('แก้ไขได้เฉพาะบัญชีพนักงาน', status=404)
+    if user.is_superuser and not actor.is_superuser:
+        raise ServiceError('บัญชีนี้แก้ไขได้เฉพาะผู้ดูแลระบบสูงสุด', status=403, code='forbidden')
+
+
 @transaction.atomic
-def save_staff(data: dict, user=None):
+def save_staff(data: dict, user=None, actor=None):
     User = get_user_model()
+    _check_target(user, actor)
     creating = user is None
     username = clean_text(data.get('username'), 150)
     if creating and not username:
@@ -36,7 +52,12 @@ def save_staff(data: dict, user=None):
     user.email = clean_text(data.get('email', user.email), 254)
     user.phone = clean_text(data.get('phone', user.phone or ''), 20) or None
     if 'is_active' in data:
-        user.is_active = bool(data['is_active'])
+        user.is_active = data['is_active'] is True or str(data['is_active']).lower() in ('true', '1', 'on')
+    if actor is not None and user.pk == actor.pk:
+        if not user.is_active:
+            raise ServiceError('ไม่สามารถปิดการใช้งานบัญชีของตัวเองได้')
+        if role != 'admin' and not user.is_superuser:
+            raise ServiceError('ไม่สามารถลดตำแหน่งบัญชีของตัวเองได้')
     password = data.get('password')
     if creating and not password:
         raise ServiceError('กรุณาตั้งรหัสผ่าน')
@@ -50,6 +71,7 @@ def save_staff(data: dict, user=None):
 def delete_staff(user, actor) -> None:
     if user.pk == actor.pk:
         raise ServiceError('ไม่สามารถลบบัญชีของตัวเองได้')
+    _check_target(user, actor)
     # Staff appear in audit history, so deactivate instead of deleting rows.
     user.is_active = False
     user.save(update_fields=['is_active'])

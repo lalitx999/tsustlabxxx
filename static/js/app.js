@@ -108,16 +108,19 @@
     throw new Error('ใช้เวลานานเกินไป กรุณาลองใหม่');
   }
 
-  /* Button busy state: TL.busy(btn, true) */
+  /* Button busy state: TL.busy(btn, true)
+   * The original label is kept in data-tl-busy-label so it never overwrites a
+   * page's own data-* attributes (e.g. data-label="<job id>" on Operations). */
   function busy(button, on) {
     if (!button) return;
     if (on) {
-      button.dataset.label = button.innerHTML;
+      button.dataset.tlBusyLabel = button.innerHTML;
       button.disabled = true;
       button.innerHTML = icon('loader-circle', 'tl-spin') + ' <span>กำลังดำเนินการ...</span>';
     } else {
       button.disabled = false;
-      if (button.dataset.label) button.innerHTML = button.dataset.label;
+      if (button.dataset.tlBusyLabel) button.innerHTML = button.dataset.tlBusyLabel;
+      delete button.dataset.tlBusyLabel;
     }
   }
 

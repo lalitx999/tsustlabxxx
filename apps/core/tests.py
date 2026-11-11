@@ -69,7 +69,8 @@ class PricingTests(Base):
     def test_member_factor_on_package_price(self):
         PackagePrice.objects.create(package=ServicePackage.objects.get(code='cert_15d'), category='Bag',
                                     brand='Louis Vuitton', member_tier='general', amount=Decimal('2000'))
-        q = quote({'service_package': 'cert_15d', 'category': 'Bag', 'brand': 'LV', 'membership_level': 'platinum'})
+        q = quote({'service_package': 'cert_15d', 'category': 'Bag', 'brand': 'LV', 'membership_level': 'platinum'},
+                  allow_tier_override=True)  # staff picking the tier
         self.assertEqual(q['service_amount'], '1700.00')  # alias LV + 15% off
 
     def test_promo_and_shipping(self):

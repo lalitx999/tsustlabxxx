@@ -1,4 +1,6 @@
 """Walk-in counter: one transaction = booking + check-in (+ optional payment)."""
+import uuid
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -8,6 +10,7 @@ from apps.bookings.services.payment_service import receive_counter_payment
 from apps.catalog.services.pricing_service import quote
 from apps.core.exceptions import ServiceError
 from apps.core.utils import clean_text, digits_only, parse_pk
+from apps.customers.models import Customer
 from apps.inspections.models import Job
 from apps.inspections.services.job_service import apply_item_details, check_in
 
@@ -15,12 +18,30 @@ ADDRESS_FIELDS = ('return_address_name', 'return_phone', 'return_address_detail'
                   'return_district', 'return_province', 'return_postal_code')
 
 
+def _walkin_slot(request_key):
+    """Date/time for the walk-in booking.
+
+    A retry with the same request_key must reuse the first attempt's date/time,
+    otherwise the request fingerprint changes after a minute and the retry is
+    rejected instead of returning the booking that was already saved.
+    """
+    try:
+        key = uuid.UUID(str(request_key or ''))
+    except ValueError:
+        key = None
+    previous = Booking.objects.filter(request_key=key).only('booking_date', 'booking_time').first() if key else None
+    if previous:
+        return previous.booking_date, previous.booking_time
+    now = timezone.localtime()
+    return now.date(), now.time()
+
+
 @transaction.atomic
 def create_walkin(data: dict, actor) -> Booking:
-    now = timezone.localtime()
+    day, time = _walkin_slot(data.get('request_key'))
     # Payment is recorded below via the counter-payment path so the real method
     # (cash/card/transfer) is stored and counted in revenue reports.
-    payload = {**data, 'date': now.date().isoformat(), 'time_slot': now.strftime('%H:%M'),
+    payload = {**data, 'date': day.isoformat(), 'time_slot': time.strftime('%H:%M'),
                'payment_method': 'shop', 'mark_paid': False}
     booking = create_booking(actor, payload)['booking']
     Booking.objects.filter(pk=booking.pk).update(channel='walk_in')
@@ -46,7 +67,13 @@ def update_walkin(booking_id, data: dict, actor) -> Booking:
     if data.get('customer_name'):
         customer.full_name = clean_text(data['customer_name'], 255)
     if data.get('customer_phone'):
-        customer.phone_number = digits_only(data['customer_phone'])
+        phone = digits_only(data['customer_phone'])
+        if len(phone) < 9:
+            raise ServiceError('เบอร์โทรไม่ถูกต้อง')
+        # phone_number is unique: report a clear message instead of a database error (HTTP 500).
+        if Customer.objects.filter(phone_number=phone).exclude(pk=customer.pk).exists():
+            raise ServiceError('เบอร์โทรนี้เป็นของลูกค้ารายอื่นแล้ว กรุณาค้นหาลูกค้าด้วยเบอร์นี้แทน')
+        customer.phone_number = phone
     if 'customer_email' in data:
         customer.email = clean_text(data['customer_email'], 254) or None
     customer.save(update_fields=['full_name', 'phone_number', 'email'])

@@ -65,17 +65,28 @@ def _first_by_brand(queryset, brands):
     return None
 
 
-def resolve_tier(data: dict, customer=None) -> str:
+def resolve_tier(data: dict, customer=None, *, allow_override=False) -> str:
+    """Tier used for pricing.
+
+    Only staff may pick a tier in the request (allow_override=True). Customers and
+    anonymous visitors always get the tier stored on their own customer record,
+    otherwise anyone could post membership_level=platinum and pay the member price.
+    """
     requested = data.get('membership_level') or data.get('membership_tier')
-    if requested:
+    if requested and allow_override:
         return str(requested).strip().lower()
     if customer is not None and customer.membership_level_id:
         return customer.membership_level.level_name.lower()
     return 'general'
 
 
-def quote(data: dict, customer=None, *, allow_manual_price=False) -> dict:
-    """Build an immutable price snapshot. Raises ServiceError for bad input."""
+def quote(data: dict, customer=None, *, allow_manual_price=False, allow_tier_override=None) -> dict:
+    """Build an immutable price snapshot. Raises ServiceError for bad input.
+
+    allow_tier_override defaults to allow_manual_price (both mean "front desk").
+    """
+    if allow_tier_override is None:
+        allow_tier_override = allow_manual_price
     policy = get_policy()
     code = data.get('service_package')
     package = ServicePackage.objects.filter(code=code, enabled=True).first()
@@ -88,7 +99,7 @@ def quote(data: dict, customer=None, *, allow_manual_price=False) -> dict:
     if not brand:
         raise ServiceError('กรุณาระบุแบรนด์')
 
-    tier = resolve_tier(data, customer)
+    tier = resolve_tier(data, customer, allow_override=allow_tier_override)
     factor = MEMBER_PRICE_FACTORS.get(tier)
     cert_price = CERT_PRICE_BY_TIER.get(tier, CERT_PRICE_BY_TIER['general'])
     discount_percent = Decimal('0')

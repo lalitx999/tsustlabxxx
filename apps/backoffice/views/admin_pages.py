@@ -135,7 +135,7 @@ def user_save(request, pk=None):
     if request.json.get('deactivate') and user:
         user_service.delete_staff(user, request.user)
         return reply(message='ปิดการใช้งานบัญชีแล้ว')
-    user = user_service.save_staff(request.json, user)
+    user = user_service.save_staff(request.json, user, actor=request.user)
     return reply({'id': user.pk}, message='บันทึกผู้ใช้แล้ว')
 
 
