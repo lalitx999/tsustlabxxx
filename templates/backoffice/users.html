@@ -1,0 +1,62 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head">
+    <div><h1 class="bo-h1">User Management</h1><p class="bo-sub">จัดการข้อมูลพนักงานขายและเจ้าหน้าที่วิเคราะห์ระบบหน้าร้าน</p></div>
+    <button type="button" class="bo-btn dark" data-edit="">{% icon 'user-plus' %} เพิ่มผู้ใช้งาน</button>
+  </div>
+  <div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table">
+    <thead><tr><th>ID</th><th>ชื่อพนักงาน</th><th>ตำแหน่ง</th><th>Username</th><th>อีเมล</th><th>สถานะ</th><th class="text-end">การกระทำ</th></tr></thead>
+    <tbody>{% for u in users %}
+      <tr><td class="fw-black" style="color:var(--n950)">#{{ u.pk }}</td><td>{{ u.full_name|default:'-' }}</td>
+        <td><span class="pill {% if u.role == 'admin' %}p-black{% elif u.role == 'expert' %}p-purple{% elif u.role == 'manager' %}p-blue{% else %}p-neutral{% endif %}">{{ u.get_role_display }}</span></td>
+        <td class="font-monospace">{{ u.username }}</td><td class="fw-medium text-n600">{{ u.email|default:'-' }}</td>
+        <td>{% if u.is_active %}<span class="pill p-emerald">ใช้งาน</span>{% else %}<span class="pill p-neutral">ปิดใช้งาน</span>{% endif %}</td>
+        <td class="text-end"><button class="bo-btn-xs outline" data-edit='{"id":{{ u.pk }},"username":"{{ u.username|escapejs }}","full_name":"{{ u.full_name|escapejs }}","email":"{{ u.email|escapejs }}","phone":"{{ u.phone|default:""|escapejs }}","role":"{{ u.role }}","is_active":{{ u.is_active|yesno:"true,false" }}}'>{% icon 'pencil' %} แก้ไข</button></td></tr>
+    {% endfor %}</tbody>
+  </table></div></div>
+</div>
+
+<div class="modal fade bo-modal" id="userModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body position-relative">
+    <button type="button" class="bo-modal-x border position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close">{% icon 'x' %}</button>
+    <h2 class="text-sm fw-black text-n900 text-uppercase ls-widest mb-0" id="userTitle">เพิ่มผู้ใช้งาน</h2>
+    <form id="userForm" class="d-grid gap-3">
+      <input type="hidden" name="id">
+      <div class="row g-2">
+        <div class="col-6"><label class="bo-lbl">Username</label><input name="username" class="bo-field" required maxlength="150"></div>
+        <div class="col-6"><label class="bo-lbl">ตำแหน่ง</label><select name="role" class="bo-field"><option value="front">Front Desk Staff</option><option value="expert">Expert Specialist</option><option value="manager">Manager</option><option value="admin">Administrator</option></select></div>
+        <div class="col-12"><label class="bo-lbl">ชื่อพนักงาน</label><input name="full_name" class="bo-field" maxlength="100"></div>
+        <div class="col-6"><label class="bo-lbl">อีเมล</label><input name="email" type="email" class="bo-field"></div>
+        <div class="col-6"><label class="bo-lbl">เบอร์โทร</label><input name="phone" class="bo-field" maxlength="20"></div>
+        <div class="col-12"><label class="bo-lbl">รหัสผ่าน (เว้นว่าง = ไม่เปลี่ยน)</label><input name="password" type="password" class="bo-field" autocomplete="new-password"></div>
+      </div>
+      <label class="d-flex align-items-center gap-2 text-xs"><input type="checkbox" name="is_active" checked> เปิดใช้งานบัญชี</label>
+      <button type="submit" class="btn-submit">บันทึกข้อมูลผู้ใช้</button>
+    </form>
+  </div></div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  const form = document.getElementById('userForm'), modal = new bootstrap.Modal(document.getElementById('userModal'));
+  document.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
+    form.reset();
+    const u = btn.dataset.edit ? JSON.parse(btn.dataset.edit) : null;
+    ['id', 'username', 'full_name', 'email', 'phone'].forEach(k => { form.querySelector('[name=' + k + ']').value = u ? u[k] : ''; });
+    form.role.value = u ? u.role : 'front'; form.is_active.checked = u ? u.is_active : true;
+    document.getElementById('userTitle').textContent = u ? 'แก้ไขผู้ใช้ ' + u.username : 'เพิ่มผู้ใช้งาน';
+    modal.show();
+  }));
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = TL.formData(form);
+    const url = d.id ? BO + 'settings/users/' + d.id + '/save/' : '{% url "backoffice:user_create" %}';
+    try { TL.toast((await TL.api(url, { method: 'POST', body: d })).message); setTimeout(() => location.reload(), 600); } catch (err) { TL.toast(err.message, 'error'); }
+  });
+})();
+</script>
+{% endblock %}

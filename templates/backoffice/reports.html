@@ -1,0 +1,73 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4 mx-auto pb-5" style="max-width:64rem">
+  <div class="bo-head bordered no-print">
+    <div><div class="d-flex align-items-center gap-2 mb-1"><span class="bo-tag">Official Report</span><span class="text-xs text-n400 font-monospace">PDF Export</span></div>
+      <h1 class="bo-h1">Daily Summary Report</h1><p class="bo-sub light">รายงานสรุปงานตรวจวิเคราะห์และรายได้ประจำวันในรูปแบบทางการ</p></div>
+    <div class="d-flex gap-2 align-self-start align-self-sm-auto">
+      <button type="button" class="bo-btn" onclick="window.print()">{% icon 'printer' %} พิมพ์</button>
+      <button type="button" class="bo-btn dark" id="pdfBtn">{% icon 'download' %} ดาวน์โหลด PDF</button>
+    </div>
+  </div>
+  <form id="period" class="bo-filters no-print">
+    <div class="row g-3 align-items-end">
+      <div class="col-6 col-md-3"><label>ตั้งแต่วันที่<input type="date" name="date_from" class="bo-in"></label></div>
+      <div class="col-6 col-md-3"><label>ถึงวันที่<input type="date" name="date_to" class="bo-in"></label></div>
+      <div class="col-12 col-md-3"><label>หรือเลือกทั้งเดือน<input type="month" name="month" class="bo-in"></label></div>
+      <div class="col-12 col-md-3"><button class="bo-btn dark w-100 justify-content-center py-2">{% icon 'refresh-cw' %} แสดงรายงาน</button></div>
+    </div>
+  </form>
+  <div class="bo-panel p-4 p-md-5 d-grid gap-4" id="reportDoc">
+    <div class="text-center border-bottom border-n200 pb-4">
+      <h2 class="text-2xl fw-black ls-widest text-uppercase mb-1" style="color:var(--n950)">TRUST LAB THAILAND</h2>
+      <p class="text-xs text-n500 mb-0">รายงานสรุปประจำวัน (Daily Summary Report) • <span id="periodLabel">-</span></p>
+    </div>
+    <div class="d-grid gap-3">
+      <h3 class="text-sm fw-black text-n900">1. สถิติจำนวนงานตรวจวิเคราะห์ (Workload &amp; Inspection Metrics)</h3>
+      <div class="table-responsive"><table class="bo-table compact border"><thead><tr><th>รายการตัววัด (Metric Item)</th><th class="text-end">จำนวน (Quantity)</th><th>หน่วย (Unit)</th></tr></thead><tbody id="metrics"></tbody></table></div>
+    </div>
+    <div class="d-grid gap-3">
+      <h3 class="text-sm fw-black text-n900">2. รายได้จำแนกตามช่องทางชำระเงิน (Revenue Breakdown)</h3>
+      <div class="table-responsive"><table class="bo-table compact border"><thead><tr><th>ช่องทางการชำระเงิน (Payment Method)</th><th class="text-end">จำนวนเงิน (Amount THB)</th></tr></thead><tbody id="revenue"></tbody></table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const form = document.getElementById('period');
+  let cur = null;
+  const tr = (cells) => '<tr>' + cells.map((c, i) => '<td class="' + (i === 1 ? 'text-end font-monospace' : '') + '">' + c + '</td>').join('') + '</tr>';
+  async function load() {
+    try {
+      const d = TL.formData(form);
+      if (!d.month) delete d.month;
+      cur = (await TL.api('{% url "backoffice:report_data" %}?' + new URLSearchParams(d))).data;
+      const s = cur.stats;
+      form.date_from.value = cur.date_from; form.date_to.value = cur.date_to;
+      document.getElementById('periodLabel').textContent = cur.label;
+      document.getElementById('metrics').innerHTML = [
+        ['งานรับตรวจทั้งหมด (Total Jobs)', s.total_jobs, 'ใบงาน'], ['ตรวจเสร็จสมบูรณ์ (Completed)', s.completed_jobs, 'ใบงาน'],
+        ['ผลตรวจ AUTHENTIC', s.authentic_jobs, 'ชิ้น'], ['ผลตรวจ NOT AUTHENTICATED', s.fake_jobs, 'ชิ้น'], ['ผลตรวจ UNABLE TO AUTHENTICATE', s.inconclusive_jobs, 'ชิ้น']
+      ].map(tr).join('');
+      document.getElementById('revenue').innerHTML = [
+        ['เงินสด (Cash)', TL.baht(s.revenue_cash)], ['โอนเงิน (Bank Transfer)', TL.baht(s.revenue_transfer)], ['บัตรเครดิต (Credit Card)', TL.baht(s.revenue_card)],
+        ['PromptPay QR', TL.baht(s.revenue_promptpay)], ['เครดิตสมาชิก (Member Wallet)', TL.baht(s.revenue_member)], ['ค่าจัดส่งที่ได้รับ (Shipping)', TL.baht(s.shipping_received)],
+        ['หัก: คืนเงิน (Refunds)', '-' + TL.baht(s.refunds)], ['<span class="fw-black">รายได้สุทธิ (Net Revenue)</span>', '<span class="fw-black" style="color:#047857">' + TL.baht(s.total_revenue) + '</span>']
+      ].map(tr).join('');
+    } catch (err) { TL.toast(err.message, 'error'); }
+  }
+  form.addEventListener('submit', e => { e.preventDefault(); load(); });
+  form.month.addEventListener('change', load);
+  document.getElementById('pdfBtn').addEventListener('click', async e => {
+    const b = e.currentTarget; TL.busy(b, true);
+    try { const r = await TL.api('{% url "backoffice:report_pdf" %}', { method: 'POST', body: { date_from: cur.date_from, date_to: cur.date_to } }); window.open(await TL.waitForFile(r.data.status_url), '_blank'); }
+    catch (err) { TL.toast(err.message, 'error'); }
+    TL.busy(b, false);
+  });
+  load();
+})();
+</script>
+{% endblock %}

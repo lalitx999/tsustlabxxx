@@ -1,0 +1,49 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}About | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with eyebrow='ESTABLISHED IN THAILAND' title='ABOUT TRUST LAB' subtitle='สถาบันอิสระระดับมืออาชีพเพื่อการตรวจสอบและรับรองสินค้าแบรนด์เนมหรูหรา มุ่งสร้างมาตรฐานความโปร่งใสในตลาดสินค้าลักชัวรีมือสองของเมืองไทย' %}
+
+<section class="py-section bg-white">
+  <div class="container-custom">
+    <div class="row g-5 gx-lg-5 align-items-center">
+      <div class="col-12 col-lg-6 d-grid gap-4 pe-lg-5">
+        <h2 class="text-2xl md-text-3xl fw-bold ls-tight text-n900 text-uppercase mb-0">OUR MISSION &amp; STORY</h2>
+        <div class="d-grid gap-3 text-sm md-text-base text-n600 fw-light lh-relaxed">
+          <p class="mb-0"><strong>TRUST LAB THAILAND</strong> ก่อตั้งขึ้นจากความตั้งใจที่จะแก้ปัญหาช่องโหว่ความไม่ชัดเจนและความกังวลในกลุ่มผู้บริโภคสินค้าแบรนด์เนมหรูหรา ทั้งกระเป๋าและนาฬิกา เนื่องจากในปัจจุบันมีสินค้าลอกเลียนแบบเกรดพรีเมียม (Super Copy) เผยแพร่ในตลาดเป็นจำนวนมาก ซึ่งยากต่อการสังเกตด้วยตาเปล่าทั่วไป</p>
+          <p class="mb-0">เราเชื่อว่า "ความมั่นใจ" เป็นหัวใจสำคัญของการหมุนเวียนสินค้าลักชัวรีมือสอง เราจึงรวบรวมกลุ่มนักตรวจสอบแบรนด์เนมที่มีประสบการณ์และใบรับรองวิชาชีพสากล ร่วมมือกับผู้เชี่ยวชาญเทคโนโลยีระดับห้องปฏิบัติการ พัฒนาเกณฑ์การตรวจสอบมากกว่า 100 จุดตรวจสอบ (Checkpoints) เพื่อเป็นเกณฑ์สากลอย่างแท้จริง</p>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="bg-n50 border border-n100 r-3xl p-4 p-md-5 d-grid gap-4">
+          <div class="text-sm fw-bold ls-widest text-amber6 text-uppercase">TRUST STANDARDS</div>
+          <blockquote class="text-lg md-text-xl fw-medium fst-italic text-n800 lh-relaxed mb-0">"เราไม่ใช่ตัวแทนขาย เราไม่ตั้งราคารับซื้อ และเราไม่มีส่วนเกี่ยวข้องกับผลกำไรของการค้าสินค้าใดๆ หน้าที่เดียวของเราคือ การค้นหาความจริงเพื่อให้คุณอุ่นใจ"</blockquote>
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-n900 text-white d-flex align-items-center justify-content-center text-xs fw-bold" style="width:2.5rem;height:2.5rem">TL</div>
+            <div><h4 class="text-sm fw-semibold text-n900 mb-0">คณะกรรมการตรวจสอบอิสระ</h4><p class="text-xs text-n500 fw-light mb-0">TRUST LAB THAILAND</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-section bg-n50 border-top border-bottom border-n100">
+  <div class="container-custom">
+    <div class="section-head text-center mb-5 pb-4">
+      <h2 class="mb-3">OUR CORE VALUES</h2>
+      <p class="mx-auto mb-0">เสาหลักสำคัญ 4 ประการที่คณะทำงานของ TRUST LAB ยึดมั่นในการให้บริการตรวจสอบสินค้าแบรนด์เนมแก่พันธมิตรและลูกค้าทุกราย</p>
+    </div>
+    <div class="row g-4 g-lg-5">
+      {% for icon_name, title, label, text in values %}
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="value-card">
+          <div class="ico">{% icon icon_name 'i-8 sw-15' %}</div>
+          <div class="d-grid gap-2"><span class="kicker">{{ title }}</span><h3 class="text-base fw-semibold text-n900 mb-0">{{ label }}</h3><p class="text-xs text-n500 lh-relaxed fw-light mb-0">{{ text }}</p></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

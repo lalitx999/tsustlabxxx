@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+media/
+staticfiles/
+.DS_Store
+# Local machine only
+.claude/
+*.log
+# Full Bootstrap download kept locally; the app uses static/vendor/bootstrap-5.3.8/
+/bootstrap-5.3.8-dist/

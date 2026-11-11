@@ -1,0 +1,47 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='Inquiries & Applications' subtitle='ข้อความติดต่อจากหน้าเว็บไซต์และใบสมัครโปรแกรมพาร์ทเนอร์' refresh='ดึงข้อมูลล่าสุด' refresh_icon=True %}
+  <div class="bo-tabs">
+    <button type="button" class="on" data-tab="contacts">{% icon 'mail' 'i-4' %} ข้อความติดต่อ ({{ contacts|length }})</button>
+    <button type="button" data-tab="partners">{% icon 'handshake' 'i-4' %} ใบสมัครพาร์ทเนอร์ ({{ partners|length }})</button>
+  </div>
+  <div data-pane="contacts" class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table">
+    <thead><tr><th>สถานะ</th><th>ผู้ติดต่อ</th><th>ช่องทางติดต่อ</th><th>หัวข้อ</th><th>ส่งเมื่อ</th><th class="text-end">การจัดการ</th></tr></thead>
+    <tbody>{% for c in contacts %}<tr>
+      <td><select class="bo-field py-0" style="height:2rem;width:auto" data-kind="contact" data-id="{{ c.pk }}">{% for s in contact_statuses %}<option value="{{ s }}" {% if c.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></td>
+      <td class="fw-black" style="color:var(--n950)">{{ c.name }}</td><td class="fw-medium text-n600">{{ c.email }}<br>{{ c.phone }}</td>
+      <td class="fw-normal text-n700" style="max-width:24rem">{{ c.message|linebreaksbr }}</td><td class="text-n500 fw-medium">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><button class="bo-btn-xs danger" data-del="contact" data-id="{{ c.pk }}">{% icon 'trash-2' %} ลบ</button></td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center py-5 text-n400">ยังไม่มีข้อความติดต่อ</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+  <div data-pane="partners" class="bo-panel overflow-hidden" hidden><div class="table-responsive"><table class="bo-table">
+    <thead><tr><th>สถานะ</th><th>ชื่อธุรกิจ / ร้านค้า</th><th>ผู้ติดต่อ</th><th>ช่องทางติดต่อ</th><th>ส่งเมื่อ</th><th class="text-end">การจัดการ</th></tr></thead>
+    <tbody>{% for p in partners %}<tr>
+      <td><select class="bo-field py-0" style="height:2rem;width:auto" data-kind="partner" data-id="{{ p.pk }}">{% for s in partner_statuses %}<option value="{{ s }}" {% if p.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></td>
+      <td class="fw-black" style="color:var(--n950)">{{ p.business_name }}<div class="fs-10px text-n500 fw-normal mt-1">{{ p.message|linebreaksbr }}</div></td><td>{{ p.contact_name }}</td>
+      <td class="fw-medium text-n600">{{ p.email }}<br>{{ p.phone }}</td><td class="text-n500 fw-medium">{{ p.created_at|date:"d/m/Y H:i" }}</td>
+      <td class="text-end"><button class="bo-btn-xs danger" data-del="partner" data-id="{{ p.pk }}">{% icon 'trash-2' %} ลบ</button></td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center py-5 text-n400">ยังไม่มีใบสมัครพาร์ทเนอร์</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}', url = (k, id) => BO + 'inquiries/' + k + '/' + id + '/';
+  document.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('on', x === t));
+    document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t.dataset.tab; });
+  }));
+  document.querySelectorAll('select[data-kind]').forEach(s => s.addEventListener('change', async () => {
+    try { TL.toast((await TL.api(url(s.dataset.kind, s.dataset.id), { method: 'POST', body: { status: s.value } })).message); } catch (e) { TL.toast(e.message, 'error'); }
+  }));
+  document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('ลบรายการนี้?')) return;
+    try { await TL.api(url(b.dataset.del, b.dataset.id), { method: 'POST', body: { delete: true } }); b.closest('tr').remove(); TL.toast('ลบแล้ว'); } catch (e) { TL.toast(e.message, 'error'); }
+  }));
+})();
+</script>
+{% endblock %}

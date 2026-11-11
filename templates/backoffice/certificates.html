@@ -1,0 +1,60 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head">
+    <div><h1 class="bo-h1">Certificates Issued</h1><p class="bo-sub fw-light">รายการใบรับรองผลการตรวจสอบสินค้าที่ออกแล้วทั้งหมด</p></div>
+    <button type="button" class="bo-btn" id="reloadBtn">{% icon 'refresh-cw' %} ดึงข้อมูลล่าสุด</button>
+  </div>
+  {% include 'backoffice/_filters.html' with date_label='วันที่ออกใบรับรอง' unit='ใบ' %}
+  <div id="listBox"><div class="bo-empty">กำลังดึงข้อมูลใบรับรอง...</div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}', VERIFY = '{% url "website:verify" %}?id=', QR = '{% url "backoffice:qr" %}?id=';
+  const box = document.getElementById('listBox');
+  let rows = [];
+  const ST = { authentic: ['p-emerald', 'AUTHENTIC'], unauthentic: ['p-red', 'NOT AUTHENTICATED'], revoked: ['p-neutral', 'REVOKED'], expired: ['p-amber', 'EXPIRED'] };
+  const day = v => v ? new Date(v).toLocaleDateString('th-TH') : '-';
+  function render() {
+    const list = rows.filter(TLFilters.match);
+    TLFilters.count(list.length, rows.length);
+    if (!list.length) { box.innerHTML = '<div class="bo-empty">ไม่พบใบรับรองตามเงื่อนไขที่เลือก</div>'; return; }
+    box.innerHTML = '<div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table"><thead><tr><th>Certificate ID</th><th>Job ID</th><th>ยี่ห้อ / รุ่นสินค้า</th><th>Serial Number</th><th>ผู้รับตรวจ</th><th>วันที่ออก</th><th>สถานะ</th><th class="text-end">การจัดการ</th></tr></thead><tbody>' +
+      list.map((c, i) => { const st = ST[c.status] || ['p-neutral', c.status];
+        return '<tr><td class="fw-black font-monospace" style="color:var(--n950)">' + TL.esc(c.code) + '</td><td class="text-n500">' + TL.esc(c.job_display_id) + '</td>' +
+        '<td><span class="fw-black" style="color:var(--n950)">' + TL.esc(c.brand) + '</span> ' + TL.esc(c.model) + '</td><td class="font-monospace text-uppercase">' + TL.esc(c.serial || '-') + '</td>' +
+        '<td>' + TL.esc(c.customer) + '</td><td class="text-n500 fw-medium">' + day(c.issued) + '<div class="fs-10px text-n400">หมดอายุ ' + day(c.expires) + '</div></td><td><span class="pill ' + st[0] + '">' + st[1] + '</span></td>' +
+        '<td class="text-end text-nowrap"><a class="bo-btn-xs outline text-decoration-none" target="_blank" href="' + VERIFY + encodeURIComponent(c.code) + '" title="หน้าตรวจสอบ">' + TL.icon('external-link') + '</a> ' +
+        '<button class="bo-btn-xs outline" data-act="pdf" data-i="' + i + '">' + TL.icon('download') + ' PDF</button> ' +
+        '<button class="bo-btn-xs outline" data-act="send" data-i="' + i + '">' + TL.icon('send') + ' ส่ง</button> ' +
+        '<a class="bo-btn-xs outline text-decoration-none" href="' + QR + encodeURIComponent(c.code) + '">' + TL.icon('qr-code') + '</a> ' +
+        '<button class="bo-btn-xs outline" data-act="code" data-i="' + i + '">' + TL.icon('pencil') + '</button> ' +
+        (c.status !== 'revoked' ? '<button class="bo-btn-xs danger" data-act="revoke" data-i="' + i + '">' + TL.icon('ban') + '</button>' : '') + '</td></tr>'; }).join('') +
+      '</tbody></table></div></div>';
+  }
+  async function load() {
+    try { rows = (await TL.api(BO + 'certificates/rows/')).data; render(); }
+    catch (err) { box.innerHTML = '<div class="p-4 r-2xl text-xs" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c">เกิดข้อผิดพลาด: ' + TL.esc(err.message) + '</div>'; }
+  }
+  box.addEventListener('click', async e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const list = rows.filter(TLFilters.match), c = list[Number(b.dataset.i)], url = BO + 'certificates/' + encodeURIComponent(c.code) + '/';
+    try {
+      if (b.dataset.act === 'pdf') { TL.busy(b, true); const r = await TL.api(url + 'pdf/', { method: 'POST' }); window.open(await TL.waitForFile(r.data.status_url), '_blank'); TL.busy(b, false); return; }
+      let r;
+      if (b.dataset.act === 'send') { const to = prompt('อีเมลผู้รับ', c.email); if (!to) return; r = await TL.api(url + 'send/', { method: 'POST', body: { method: 'email', recipient: to } }); }
+      if (b.dataset.act === 'code') { const code = prompt('เลขใบเซอร์ใหม่', c.code); if (!code) return; r = await TL.api(url + 'code/', { method: 'POST', body: { cert_code: code } }); }
+      if (b.dataset.act === 'revoke') { const reason = prompt('เหตุผลการเพิกถอนใบรับรอง'); if (!reason) return; r = await TL.api(url + 'revoke/', { method: 'POST', body: { reason: reason } }); }
+      TL.toast(r.message); load();
+    } catch (err) { TL.busy(b, false); TL.toast(err.message, 'error'); }
+  });
+  document.getElementById('reloadBtn').addEventListener('click', load);
+  TLFilters.onChange(render);
+  const q = new URLSearchParams(location.search).get('q'); if (q) document.querySelector('[data-f="search"]').value = q;
+  load();
+})();
+</script>
+{% endblock %}

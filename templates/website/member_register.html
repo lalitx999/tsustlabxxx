@@ -1,0 +1,31 @@
+{% extends 'website/layout.html' %}
+{% block title %}Register | TRUST LAB THAILAND{% endblock %}
+{% block main_class %}bg-n50{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center py-5 px-3" style="min-height:60vh">
+  <div class="auth-card">
+    <div class="d-flex flex-column align-items-center mb-4">
+      <h2 class="text-2xl fw-bold ls-tight text-n900 mb-1">สมัครสมาชิกใหม่</h2>
+      <p class="text-sm text-n500 mb-0">เข้าร่วมเป็นครอบครัวเดียวกับ TrustLab Luxury Hub</p>
+    </div>
+    {% for m in messages %}{% if m.tags == 'error' %}<div class="auth-error">{{ m.message }}</div>{% endif %}{% endfor %}
+    <form method="post" class="d-grid gap-3">
+      {% csrf_token %}
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">ชื่อผู้ใช้งาน <span class="text-danger">*</span></label>
+        <input name="username" value="{{ form.username|default:'' }}" class="auth-input" placeholder="กรอกชื่อผู้ใช้งานภาษาอังกฤษ" required maxlength="150" autocomplete="username"></div>
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">ชื่อ-นามสกุลจริง <span class="text-danger">*</span></label>
+        <input name="full_name" value="{{ form.full_name|default:'' }}" class="auth-input" placeholder="กรอกชื่อจริงของคุณ" required maxlength="100"></div>
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">เบอร์โทรศัพท์ <span class="text-danger">*</span></label>
+        <input name="phone" type="tel" value="{{ form.phone|default:'' }}" class="auth-input" placeholder="กรอกเบอร์โทรศัพท์มือถือ" required maxlength="20"></div>
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">อีเมล (ไม่บังคับ)</label>
+        <input name="email" type="email" value="{{ form.email|default:'' }}" class="auth-input" placeholder="example@email.com"></div>
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">รหัสผ่าน <span class="text-danger">*</span></label>
+        <input name="password" type="password" class="auth-input" placeholder="กรอกรหัสผ่าน (อย่างน้อย 8 ตัวอักษร)" required minlength="8" autocomplete="new-password"></div>
+      <button type="submit" class="auth-btn">สมัครสมาชิก</button>
+    </form>
+    <div class="mt-4 pt-4 border-top border-n100 text-center text-sm">
+      <span class="text-n500">มีบัญชีสมาชิกแล้ว? </span><a href="{% url 'website:member_login' %}" class="fw-semibold text-black">เข้าสู่ระบบ</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

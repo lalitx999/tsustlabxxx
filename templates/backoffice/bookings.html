@@ -1,0 +1,103 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head">
+    <div><h1 class="bo-h1">Booking List</h1><p class="bo-sub">รายการจองคิวออนไลน์ส่งมาจากหน้าบ้าน</p></div>
+    <button type="button" class="bo-btn" id="reloadBtn">{% icon 'refresh-cw' %} ดึงข้อมูลล่าสุด</button>
+  </div>
+  {% include 'backoffice/_filters.html' with date_label='วันที่นัดหมาย' unit='รายการ' %}
+  <div id="listBox"><div class="bo-empty">กำลังดึงข้อมูลการจอง...</div></div>
+</div>
+
+<div class="modal fade bo-modal" id="bookingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-body">
+    <div class="d-flex justify-content-between align-items-center pb-3 border-bottom border-n100">
+      <h3 class="text-sm fw-black text-n900 text-uppercase ls-wide mb-0" id="mTitle"></h3>
+      <button type="button" class="bo-modal-x" data-bs-dismiss="modal" aria-label="Close">{% icon 'x' 'i-4' %}</button>
+    </div>
+    <div id="mBody" class="d-grid gap-3"></div>
+  </div></div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  const box = document.getElementById('listBox');
+  const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+  let rows = [], cur = null;
+  const PKG = { cert_15d: 'ใบรับรอง 15 วัน', cert_90d: 'ใบรับรอง 90 วัน', photo_review: 'Photo Review' };
+  const ST = { pending: ['p-amber', 'รอยืนยัน'], confirmed: ['p-emerald', 'ยืนยันแล้ว'], completed: ['p-sky', 'ตรวจเสร็จ'], cancelled: ['p-neutral', 'ยกเลิก'] };
+  const PAY = { paid: 'p-emerald', pending_review: 'p-blue', unpaid: 'p-amber', rejected: 'p-red' };
+  function render() {
+    const list = rows.filter(TLFilters.match);
+    TLFilters.count(list.length, rows.length);
+    if (!list.length) { box.innerHTML = '<div class="bo-empty">ไม่พบรายการจองตามเงื่อนไขที่เลือก</div>'; return; }
+    box.innerHTML = '<div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table"><thead><tr><th>Booking ID</th><th>ลูกค้า / ระดับ</th><th>สินค้า</th><th>บริการ</th><th>นัดหมาย</th><th>สถานะ</th><th class="text-end">การกระทำ</th></tr></thead><tbody>' +
+      list.map(b => { const st = ST[b.status] || ['p-neutral', b.status];
+        return '<tr><td class="fw-black" style="color:var(--n950)">' + TL.esc(b.display_id) + '</td>' +
+        '<td>' + TL.esc(b.customer_name) + '<div class="fs-10px text-n400 fw-medium">' + TL.esc(b.customer_phone) + ' • ' + TL.esc(b.member_tier) + '</div></td>' +
+        '<td><span class="fw-black" style="color:var(--n950)">' + TL.esc(b.brand_name) + '</span> ' + TL.esc(b.model) + '<div class="fs-10px text-n400 fw-medium">' + TL.esc(b.category) + '</div></td>' +
+        '<td>' + (PKG[b.service_package] || TL.esc(b.service_package)) + '<div class="fs-10px fw-medium"><span class="pill ' + (PAY[b.payment_status] || 'p-neutral') + '">' + TL.esc(b.payment_status_label) + '</span> ฿' + TL.baht(b.total) + '</div></td>' +
+        '<td>' + TL.esc(b.booking_date) + '<div class="fs-10px text-n400 fw-medium">' + TL.esc(b.booking_time) + ' น.</div></td>' +
+        '<td><span class="pill ' + st[0] + '">' + st[1] + '</span>' + (b.job_display_id ? '<div class="fs-10px text-n400 fw-medium mt-1">คิว ' + TL.esc(b.job_display_id) + '</div>' : '') + '</td>' +
+        '<td class="text-end"><button class="bo-btn-xs" data-open="' + b.id + '">' + TL.icon('eye') + ' จัดการ</button></td></tr>'; }).join('') +
+      '</tbody></table></div></div>';
+  }
+  async function load() {
+    try { rows = (await TL.api(BO + 'bookings/rows/')).data; render(); }
+    catch (err) { box.innerHTML = '<div class="p-4 r-2xl text-xs" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c">เกิดข้อผิดพลาด: ' + TL.esc(err.message) + '</div>'; }
+  }
+  async function open(id) {
+    cur = (await TL.api(BO + 'bookings/' + id + '/')).data;
+    const b = cur;
+    document.getElementById('mTitle').textContent = b.display_id + ' • ' + b.customer_name;
+    const row = (k, v) => '<div><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+    const photos = b.photos.customer.concat(b.photos.staff).map(p => '<div class="col-3 col-md-2"><a class="bo-photo" href="' + TL.esc(p.url) + '" target="_blank"><img src="' + TL.esc(p.url) + '" alt=""></a></div>').join('');
+    const slip = b.slip_url || b.legacy_slip;
+    let html = '<div class="bo-detail">' + row('สินค้า:', TL.esc(b.category + ' • ' + b.brand_name + ' ' + b.model)) + row('บริการ:', PKG[b.service_package] || TL.esc(b.service_package)) +
+      row('นัดหมาย:', TL.esc(b.booking_date + ' ' + b.booking_time) + ' น.') + row('ยอดรวม:', '฿' + TL.baht(b.total)) +
+      row('ชำระเงิน:', '<span class="pill ' + (PAY[b.payment_status] || 'p-neutral') + '">' + TL.esc(b.payment_status_label) + '</span> ' + TL.esc(b.payment_method)) +
+      row('หมายเหตุ:', TL.esc(b.note || '-')) + '</div>';
+    if (photos) html += '<div><label class="bo-lbl">รูปถ่ายสินค้า</label><div class="row g-2">' + photos + '</div></div>';
+    if (slip) html += '<div><label class="bo-lbl">สลิปการโอน</label><a href="' + TL.esc(slip) + '" target="_blank"><img src="' + TL.esc(slip) + '" style="max-height:220px" class="r-xl border" alt="slip"></a></div>';
+    if (b.cancellation) html += '<div class="p-3 r-xl text-xs" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e">คำขอยกเลิก: ' + TL.esc(b.cancellation.status) + ' • ' + TL.esc(b.cancellation.reason) + '</div>';
+    if (b.status !== 'cancelled') {
+      html += '<div class="d-flex flex-wrap gap-2 pt-2 border-top border-n100">';
+      if (!b.job_id) html += '<button class="bo-btn dark" data-act="checkin">' + TL.icon('clipboard-check') + ' รับสินค้า / ออกคิว</button>';
+      if (b.payment_status === 'unpaid' || b.payment_status === 'rejected') html += '<button class="bo-btn" data-act="pay">' + TL.icon('banknote') + ' รับชำระที่เคาน์เตอร์</button><button class="bo-btn" data-act="qr">' + TL.icon('qr-code') + ' QR PromptPay</button>';
+      if (b.payment_status === 'pending_review') html += '<button class="bo-btn" data-act="approve">' + TL.icon('check') + ' อนุมัติสลิป</button><button class="bo-btn" data-act="reject">ปฏิเสธสลิป</button>';
+      html += '<button class="bo-btn ms-auto" style="color:#dc2626;border-color:#fecaca" data-act="cancel">' + TL.icon('ban') + ' ยืนยันการยกเลิก Booking</button></div><div id="actBox"></div>';
+    }
+    document.getElementById('mBody').innerHTML = html;
+    modal.show();
+  }
+  async function act(name) {
+    const b = cur, url = BO + 'bookings/' + b.id + '/';
+    try {
+      let res;
+      if (name === 'checkin') res = await TL.api(url + 'check-in/', { method: 'POST', body: {} });
+      if (name === 'pay') {
+        const method = prompt('ช่องทาง: cash / credit_card / transfer / promptpay', 'cash'); if (!method) return;
+        const reference = prompt('เลขอ้างอิง / เลขที่ใบเสร็จ'); if (!reference) return;
+        res = await TL.api(url + 'payment/', { method: 'POST', body: { method: method, reference: reference, amount: b.total } });
+      }
+      if (name === 'qr') { res = await TL.api(url + 'qr/', { method: 'POST' }); document.getElementById('actBox').innerHTML = '<div class="text-center"><img src="' + res.data.qr_image + '" style="max-width:200px" alt="QR"><div class="text-xs">฿' + TL.baht(res.data.amount) + '</div></div>'; return; }
+      if (name === 'approve' || name === 'reject') {
+        const reference = prompt(name === 'approve' ? 'เลขอ้างอิงการโอน' : 'เหตุผลที่ปฏิเสธ'); if (!reference) return;
+        res = await TL.api(url + 'slip-review/', { method: 'POST', body: { action: name, reference: reference, amount: b.total } });
+      }
+      if (name === 'cancel') { const reason = prompt('เหตุผลการยกเลิก'); if (reason === null) return; res = await TL.api(url + 'cancel/', { method: 'POST', body: { reason: reason } }); }
+      TL.toast(res.message || 'สำเร็จ'); await open(b.id); load();
+    } catch (err) { TL.toast(err.message, 'error'); }
+  }
+  box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) open(b.dataset.open).catch(x => TL.toast(x.message, 'error')); });
+  document.getElementById('mBody').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); });
+  document.getElementById('reloadBtn').addEventListener('click', load);
+  TLFilters.onChange(render);
+  const q = new URLSearchParams(location.search).get('q'); if (q) { document.querySelector('[data-f="search"]').value = q; }
+  load();
+})();
+</script>
+{% endblock %}

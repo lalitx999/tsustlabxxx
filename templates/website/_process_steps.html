@@ -1,0 +1,22 @@
+{% load ui %}
+<section class="py-section bg-white text-black">
+  <div class="container-custom">
+    <div class="text-center mb-5 pb-4">
+      <h2 class="text-2xl md-text-3xl fw-bold ls-widest text-uppercase mb-3">{% t 'processHeading' %}</h2>
+      <p class="text-sm md-text-base text-g500 max-w-xl mx-auto fw-light lh-relaxed mb-0">{% t 'processSub' %}</p>
+    </div>
+    <div class="process-grid">
+      {% for kicker, title, info in copy.steps %}
+      <div class="step">
+        <div class="step-icon">{% with icon_name=step_icons|slice:forloop.counter|last %}{% icon icon_name 'i-6 sw-15' %}{% endwith %}<span class="step-num">{{ forloop.counter|stringformat:"02d" }}</span></div>
+        <div>
+          <h4 class="step-kicker">{{ kicker }}</h4>
+          <h3 class="text-sm fw-semibold text-n900 mb-1">{{ title }}</h3>
+          <p class="text-xs text-n500 mx-auto fw-light lh-relaxed mb-0" style="max-width:180px">{{ info }}</p>
+        </div>
+        {% if not forloop.last %}<div class="step-arrow">{% icon 'hi-chevron-right' 'i-4' %}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

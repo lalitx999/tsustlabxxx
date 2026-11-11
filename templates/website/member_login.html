@@ -1,0 +1,25 @@
+{% extends 'website/layout.html' %}
+{% block title %}Member Login | TRUST LAB THAILAND{% endblock %}
+{% block main_class %}bg-n50{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center py-5 px-3" style="min-height:60vh">
+  <div class="auth-card">
+    <div class="d-flex flex-column align-items-center mb-4">
+      <h2 class="text-2xl fw-bold ls-tight text-n900 mb-1">เข้าสู่ระบบสมาชิก</h2>
+      <p class="text-sm text-n500 mb-0">กรอกชื่อผู้ใช้งานและรหัสผ่านเพื่อเข้าสู่ Dashboard</p>
+    </div>
+    {% for m in messages %}{% if m.tags == 'error' %}<div class="auth-error">{{ m.message }}</div>{% endif %}{% endfor %}
+    <form method="post" class="d-grid gap-3">
+      {% csrf_token %}
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">ชื่อผู้ใช้งาน หรือเบอร์โทรศัพท์</label>
+        <input name="username" value="{{ username }}" class="auth-input" placeholder="กรอกชื่อผู้ใช้งานหรือเบอร์โทร" autocomplete="username" required autofocus></div>
+      <div><label class="d-block text-sm fw-medium text-n700 mb-2">รหัสผ่าน</label>
+        <input name="password" type="password" class="auth-input" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required></div>
+      <button type="submit" class="auth-btn d-flex align-items-center justify-content-center gap-2">เข้าสู่ระบบ</button>
+    </form>
+    <div class="mt-4 pt-4 border-top border-n100 text-center text-sm">
+      <span class="text-n500">ยังไม่เป็นสมาชิกกับเรา? </span><a href="{% url 'website:member_register' %}" class="fw-semibold text-black">สมัครสมาชิกที่นี่</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

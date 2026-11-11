@@ -1,0 +1,44 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='QR Verification' subtitle='ออกฉลาก QR Code ติดป้ายสินค้าของแท้เพื่อการรับรองภายนอก' %}
+  <div class="row g-4">
+    <div class="col-12 col-lg-6"><div class="bo-panel p-4 h-100 d-grid gap-3 align-content-start">
+      <h3 class="bo-panel-h muted">ตัวสร้างรหัสคิวอาร์โค้ด</h3>
+      <div class="d-grid gap-1"><label class="bo-lbl mb-0">กรอกเลขที่ใบรับรอง (Certificate ID)</label><input id="certId" class="bo-field bg-white" value="{{ cert_id }}" maxlength="60"></div>
+      <div class="d-grid gap-1 pt-2"><label class="bo-lbl mb-0">ตัวอย่างลิงก์ปลายทาง</label><code class="d-block bg-n50 p-3 r-xl border border-n100 fs-10px font-monospace text-break text-n700" id="verifyUrl"></code></div>
+      <button type="button" class="btn-submit" id="copyBtn">{% icon 'copy' %} คัดลอกลิงก์ตรวจสอบ</button>
+    </div></div>
+    <div class="col-12 col-lg-6"><div class="bo-panel p-5 h-100 d-flex flex-column align-items-center justify-content-center text-center gap-3">
+      <div class="sticker">
+        <div class="fs-9px fw-black ls-widest text-n800 border-bottom pb-1 w-100 text-center">TRUST LAB CERTIFIED</div>
+        <div class="border border-n200 my-3 d-flex align-items-center justify-content-center bg-white p-2" style="width:7rem;height:7rem" id="qrBox"><span class="fs-8px text-n400 fw-bold text-uppercase text-center px-2">กรอกเลขที่ใบรับรองเพื่อสร้าง QR</span></div>
+        <div class="fs-7px text-n500 font-monospace text-uppercase">SECURE NFC &amp; QR INTEGRITY</div>
+      </div>
+      <button type="button" class="bo-btn no-print" onclick="window.print()">{% icon 'printer' %} พิมพ์สติกเกอร์การันตีสินค้า</button>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const input = document.getElementById('certId'), out = document.getElementById('verifyUrl'), box = document.getElementById('qrBox');
+  const base = location.origin + '{% url "website:verify" %}?id=';
+  let timer;
+  function update() {
+    const id = input.value.trim(), url = base + encodeURIComponent(id);
+    out.textContent = url;
+    clearTimeout(timer);
+    if (!id) { box.innerHTML = '<span class="fs-8px text-n400 fw-bold text-uppercase text-center px-2">กรอกเลขที่ใบรับรองเพื่อสร้าง QR</span>'; return; }
+    timer = setTimeout(() => { box.innerHTML = '<img src="{% url "website:qr_image" %}?text=' + encodeURIComponent(url) + '" alt="QR verify" class="w-100 h-100" style="object-fit:contain">'; }, 300);
+  }
+  input.addEventListener('input', update);
+  document.getElementById('copyBtn').addEventListener('click', e => {
+    navigator.clipboard.writeText(out.textContent).then(() => { e.currentTarget.innerHTML = TL.icon('check') + ' คัดลอกลิงก์สำเร็จ'; });
+  });
+  update();
+})();
+</script>
+{% endblock %}

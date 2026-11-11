@@ -1,0 +1,510 @@
+{% extends 'website/layout.html' %}
+{% load static ui %}
+{% block title %}Book Authentication | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+<div class="px-3 py-5" style="background:rgba(250,250,250,.5);min-height:100vh">
+  {# ---------- Success screen (step 8) ---------- #}
+  <div id="bkSuccess" class="mx-auto bg-white border border-n200 r-3xl p-4 p-md-5 text-center d-grid gap-4" style="max-width:42rem;box-shadow:0 20px 25px -5px rgba(0,0,0,.1)" hidden>
+    <div class="mx-auto d-flex align-items-center justify-content-center rounded-circle" style="height:5rem;width:5rem;background:#d1fae5;color:#059669">{% icon 'circle-check' 'i-12' %}</div>
+    <div>
+      <p class="text-xs fw-bold text-uppercase text-n400 mb-0" style="letter-spacing:.25em">BOOKING CONFIRMED</p>
+      <h1 class="mt-2 text-3xl fw-black text-n900" id="okTitle"></h1>
+      <p class="mt-2 text-sm text-n500 mb-0" id="okStatus"></p>
+    </div>
+    <div class="r-2xl bg-n50 p-4 text-start d-grid gap-2 text-sm border border-n200" id="okRows"></div>
+    <div class="d-grid gap-3 pt-2">
+      <a id="okReceipt" href="#" class="d-block w-100 r-xl px-4 py-3 text-sm fw-bold text-white text-decoration-none" style="background:var(--n950)">ติดตามสถานะและรับผลตรวจออนไลน์ {% icon 'arrow-right' %}</a>
+      <a href="{% url 'website:booking' %}" class="d-inline-flex align-items-center justify-content-center gap-2 text-sm fw-semibold text-n600 text-decoration-none">{% icon 'rotate-ccw' 'i-4' %} ทำรายการจองใหม่</a>
+    </div>
+  </div>
+
+  <div class="bk-wrap d-grid gap-4" id="bkWizard">
+    <div class="bk-card r-2xl p-3 p-md-4">
+      <div class="bk-stepper" id="bkStepper">
+        {% for title in step_titles %}
+        <div class="bk-step{% if forloop.first %} active{% endif %}" data-step-nav="{{ forloop.counter }}">
+          <button type="button" class="num" disabled>{{ forloop.counter }}</button><span class="lbl">{{ title }}</span>
+          {% if not forloop.last %}<div class="bar"></div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bk-alert" role="alert" id="bkError" hidden>{% icon 'circle-alert' 'i-5' %}<span></span></div>
+
+    <div class="bk-card r-3xl p-4 p-md-5 d-flex flex-column justify-content-between" style="min-height:460px">
+      <div>
+        {# ---------- 1. Branch ---------- #}
+        <div class="d-grid gap-4" data-step="1">
+          <div><span class="bk-pill">Step 01/07</span><h2 class="bk-h2">1. SELECT BRANCH</h2><p class="text-xs text-n500 mt-1 mb-0">เลือกสาขา TRUST LAB ที่สะดวกเข้ารับบริการ</p></div>
+          <div class="row g-3">
+            {% for b in branches %}
+            <div class="col-12 col-md-6">
+              <button type="button" class="bk-branch{% if forloop.first %} sel{% endif %}" data-branch="{{ b.id }}">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center gap-3">{% icon 'building-2' 'i-6' %}<h3 class="fw-bold text-base text-n900 mb-0">{{ b.name }}</h3></div>
+                  <span class="bk-check">{% icon 'circle-check' 'i-5' %}</span>
+                </div>
+                {% if b.address %}<p class="text-xs text-n500 lh-relaxed mb-0">{{ b.address }}</p>{% endif %}
+                <div class="fs-11px text-n400 d-flex justify-content-between border-top pt-2"><span>เปิดทำการ: 11:30 - 20:30 น.</span><span class="fw-bold" style="color:#059669">เปิดบริการปกติ</span></div>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        {# ---------- 2. Service package ---------- #}
+        <div class="d-grid gap-4" data-step="2" hidden>
+          <div>
+            <h2 class="bk-h2 text-uppercase">2. SELECT SERVICE PACKAGE</h2>
+            <h3 class="text-base fw-bold text-n900 mt-1 mb-0">เลือกแพ็กเกจบริการ</h3>
+            <p class="text-xs text-n500 mt-1 mb-0">เลือกประเภทบริการที่ต้องการก่อน ราคาสุดท้ายจะคำนวณตามแบรนด์ ประเภทสินค้า และระดับสมาชิกของคุณ</p>
+          </div>
+          <div class="d-grid gap-3">
+            <label class="bk-pkg mb-0" data-pkg="photo_review">
+              <input type="radio" name="pkg_group" value="photo">
+              <div class="bk-ico">{% icon 'search' 'i-5' %}</div>
+              <div class="flex-grow-1 d-grid gap-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div><h4 class="fw-bold text-base text-n900 mb-0">ตรวจจากรูป</h4><p class="text-xs fw-medium text-n500 mb-0">Photo Review Only</p></div>
+                  <div class="text-end"><span class="d-block fs-10px fw-bold text-uppercase ls-wider text-n400">STARTING FROM</span><span class="text-xl fw-black" style="color:var(--n950)">฿500</span></div>
+                </div>
+                <p class="text-xs text-n600 pt-1 mb-0">ตรวจสอบเบื้องต้นจากรูปภาพที่คุณส่งมา</p>
+                <div class="mt-2 d-flex align-items-center gap-2 r-xl p-3 text-xs text-n700 fw-medium" style="background:rgba(245,245,245,.9)">{% icon 'circle-alert' 'i-4 text-n800' %}<span>ต้องสามารถถ่ายรูปตรวจได้ครบและชัดเจน และไม่สามารถออกใบรับรองได้ทุกกรณี</span></div>
+              </div>
+            </label>
+            <div class="bk-pkg cert flex-column sel" data-pkg="cert">
+              <div class="d-flex align-items-start gap-3 w-100">
+                <input type="radio" name="pkg_group" value="cert" checked>
+                <div class="bk-ico">{% icon 'shield-check' 'i-5' %}</div>
+                <div class="flex-grow-1 d-grid gap-1">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <h4 class="fw-bold text-base text-n900 mb-0">ตรวจสินค้าพร้อมใบรับรอง</h4><span class="bk-tag-black">แนะนำ</span>
+                      <p class="w-100 text-xs fw-medium text-n500 mb-0">Authentication + Certificate</p>
+                    </div>
+                    <div class="text-end"><span class="d-block fs-10px fw-bold text-uppercase ls-wider text-n400">STARTING FROM</span><span class="text-xl fw-black" style="color:var(--n950)">฿1,000</span></div>
+                  </div>
+                  <p class="text-xs text-n600 pt-1 mb-0">ตรวจสอบชิ้นงานตัวจริงโดยผู้เชี่ยวชาญ 100+ จุดตรวจ พร้อมออก TRUST LAB Certificate ยืนยันผลออนไลน์</p>
+                  <div class="pt-3 border-top mt-3 d-grid gap-2" style="border-color:var(--n100)!important">
+                    <span class="fs-10px fw-black text-n400 text-uppercase ls-wider">เลือกระยะเวลาความคุ้มครองใบรับรอง:</span>
+                    <div class="row g-2">
+                      <div class="col-12 col-sm-6"><button type="button" class="bk-validity" data-validity="cert_15d"><div><p class="text-xs fw-bold text-n900 mb-0">ใบรับรอง 15 วัน</p><p class="fs-10px text-n500 fw-light mb-0">อายุ 15 วัน นับจากวันออกใบรับรอง</p></div><span class="text-sm fw-black" style="color:var(--n950)">฿1,000</span></button></div>
+                      <div class="col-12 col-sm-6"><button type="button" class="bk-validity gold sel" data-validity="cert_90d"><div><div class="d-flex align-items-center gap-1"><p class="text-xs fw-bold text-n900 mb-0">ใบรับรอง 90 วัน</p><span class="px-1 bg-black text-white fs-8px fw-black rounded-pill text-uppercase">ยอดนิยม</span></div><p class="fs-10px text-n500 fw-light mb-0">อายุ 90 วัน นับจากวันออกใบรับรอง</p></div><span class="text-sm fw-black" style="color:var(--n950)">฿3,000</span></button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bk-pkg static">
+              <div class="bk-ico">{% icon 'building-2' 'i-5' %}</div>
+              <div class="flex-grow-1 d-grid gap-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div><h4 class="fw-bold text-base text-n900 mb-0">สิทธิพิเศษสำหรับ พาร์ทเนอร์และร้านค้า</h4><p class="text-xs fw-medium text-n500 mb-0">Enterprise &amp; Partnership</p></div>
+                  <div class="text-end"><span class="d-block fs-10px fw-bold text-uppercase ls-wider text-n400">PARTNER RATE</span><span class="text-sm fw-black" style="color:var(--n950)">ติดต่อสอบถาม</span></div>
+                </div>
+                <p class="text-xs text-n600 pt-1 mb-0">สิทธิพิเศษสำหรับร้านค้าแบรนด์เนม ร้านรับซื้อ ฝากขาย อัตราค่าบริการพิเศษแบบหักเครดิตสะสมในบัญชี พร้อมช่องทาง Fast Track ด่วนพิเศษ</p>
+                <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-3">
+                  <span class="text-xs text-n500 fw-medium">ต้องการสมัครโครงการพาร์ทเนอร์ หรือส่งตรวจด้วยบัญชีร้านค้า</span>
+                  <a href="{% url 'website:partner' %}" target="_blank" class="px-3 py-2 bg-black text-white text-xs fw-bold r-xl text-decoration-none d-inline-flex align-items-center gap-1">ดูรายละเอียดและสมัครพาร์ทเนอร์ {% icon 'external-link' %}</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bk-note-amber">{% icon 'info' 'i-5 text-black' %}<span>แสดงราคาเริ่มต้นเท่านั้น ราคาสุดท้ายขึ้นอยู่กับแบรนด์ ประเภทสินค้า และระดับสมาชิกของคุณ</span></div>
+        </div>
+
+        {# ---------- 3. Contact ---------- #}
+        <div class="d-grid gap-4" data-step="3" hidden>
+          <div><span class="bk-pill">Step 03/07</span><h2 class="bk-h2">3. CONTACT INFORMATION</h2><p class="text-xs text-n500 mt-1 mb-0">ระบุข้อมูลติดต่อของผู้ทำรายการ หรือ ค้นหาบัญชีสมาชิกเดิม</p></div>
+          <div class="bk-switch">
+            <button type="button" class="{% if not customer %}on{% endif %}" data-ctype="new">ลูกค้าใหม่ (New Customer)</button>
+            <button type="button" class="{% if customer %}on{% endif %}" data-ctype="member">ลูกค้าเก่า / สมาชิก (Member Search)</button>
+          </div>
+          <div class="r-2xl border border-n200 bg-n50 p-4 d-grid gap-2" id="memberBox" {% if not customer %}hidden{% endif %}>
+            {% if customer %}
+            <div class="d-flex align-items-center justify-content-between r-xl p-3" style="border:1px solid #6ee7b7;background:#ecfdf5;color:#022c22">
+              <div><p class="fw-bold text-sm mb-0">{{ customer.full_name }}</p><p class="text-xs mb-0" style="color:#047857">เบอร์: {{ customer.phone_number }} • อีเมล: {{ customer.email|default:'—' }}</p></div>
+              <span class="rounded-pill px-3 py-1 fs-10px fw-bold text-uppercase text-white" style="background:#059669">{{ customer.tier_name }}</span>
+            </div>
+            {% else %}
+            <h4 class="text-xs fw-bold text-n700 text-uppercase mb-0">ลูกค้าสมาชิกกรุณาเข้าสู่ระบบ</h4>
+            <p class="text-xs text-n500 mb-1">เข้าสู่ระบบด้วยเบอร์โทรศัพท์เพื่อใช้ราคาสมาชิกและตัดเครดิตสะสม</p>
+            <a href="{% url 'website:member_login' %}?next={% url 'website:booking' %}" class="r-xl bg-black px-4 py-3 text-xs fw-bold text-white text-decoration-none text-center">เข้าสู่ระบบสมาชิก</a>
+            {% endif %}
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><label class="bk-field"><span>ชื่อ-นามสกุลผู้ติดต่อ *</span><input name="customer_name" class="bk-input" placeholder="กรอกชื่อ-นามสกุล" value="{{ customer.full_name|default:'' }}" maxlength="255" {% if customer %}readonly{% endif %}></label></div>
+            <div class="col-12 col-md-6"><label class="bk-field"><span>เบอร์โทรศัพท์ *</span><input name="phone" type="tel" class="bk-input" placeholder="เบอร์โทรศัพท์ 10 หลัก" value="{{ customer.phone_number|default:'' }}" maxlength="20" {% if customer %}readonly{% endif %}></label></div>
+            <div class="col-12"><label class="bk-field"><span>อีเมล (รับแจ้งเตือนผลตรวจ)</span><input name="email" type="email" class="bk-input" placeholder="name@example.com" value="{{ customer.email|default:'' }}"></label></div>
+            <div class="col-12"><label class="bk-field"><span>เลขที่ใบกำกับภาษี <span class="fw-normal text-n400">(กรณีต้องการ)</span></span><input name="tax_invoice_no" class="bk-input" placeholder="เช่น 0105569150000" maxlength="20"></label></div>
+          </div>
+          <div class="d-grid gap-3 border-top pt-4" id="deliveryBox">
+            <h3 class="text-base fw-extrabold text-n900 mb-0">วิธีรับสินค้าคืน</h3>
+            <div class="d-flex flex-wrap gap-4 text-sm">
+              <label class="d-flex align-items-center gap-2"><input type="radio" name="delivery_method" value="self_pickup" checked>รับด้วยตนเองที่สาขา</label>
+              <label class="d-flex align-items-center gap-2"><input type="radio" name="delivery_method" value="shipping">จัดส่งสินค้าคืน</label>
+            </div>
+            <p class="text-xs text-n500 mb-0" data-ship-only hidden>กรอกข้อมูลผู้รับและที่อยู่ให้ครบ พร้อมรหัสไปรษณีย์ 5 หลัก เพื่อไปขั้นตอนถัดไป</p>
+          </div>
+          <div class="pt-4 border-top d-grid gap-3" data-ship-only hidden>
+            <div class="d-flex align-items-center gap-3">
+              <div class="d-flex align-items-center justify-content-center rounded-circle bg-n100 border border-n200 text-n800 flex-shrink-0" style="height:2.5rem;width:2.5rem">{% icon 'package' 'i-5' %}</div>
+              <div><h3 class="text-base fw-extrabold text-n900 mb-0">ที่อยู่ในการส่งสินค้ากลับ</h3><p class="text-xs text-n500 mb-0">กรุณาระบุที่อยู่สำหรับจัดส่งสินค้าคืนหลังจากตรวจสอบเสร็จสิ้น</p></div>
+            </div>
+            <div class="row g-3">
+              <div class="col-12 col-md-6"><label class="bk-field"><span>ชื่อผู้รับ *</span><input name="return_address_name" class="bk-input" placeholder="กรอกชื่อ-นามสกุลผู้รับ" maxlength="255"></label></div>
+              <div class="col-12 col-md-6"><label class="bk-field"><span>เบอร์โทรศัพท์ผู้รับ *</span><input name="return_phone" type="tel" class="bk-input" placeholder="เบอร์โทรศัพท์ 10 หลัก" maxlength="20"></label></div>
+              <div class="col-12"><label class="bk-field"><span>ที่อยู่ *</span><input name="return_address_detail" class="bk-input" placeholder="บ้านเลขที่ อาคาร ชั้น หมู่บ้าน ซอย ถนน"></label></div>
+              <div class="col-12 col-md-4"><label class="bk-field"><span>จังหวัด *</span><select name="return_province" class="bk-input"><option value="">เลือกจังหวัด</option>{% for p in provinces %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select></label></div>
+              <div class="col-12 col-md-4"><label class="bk-field"><span>อำเภอ / เขต *</span><input name="return_district" class="bk-input" placeholder="เลือกอำเภอ / เขต" maxlength="100"></label></div>
+              <div class="col-12 col-md-4"><label class="bk-field"><span>ตำบล / แขวง *</span><input name="return_subdistrict" class="bk-input" placeholder="เลือกตำบล / แขวง" maxlength="100"></label></div>
+              <div class="col-12 col-md-4"><label class="bk-field"><span>รหัสไปรษณีย์ *</span><input name="return_postal_code" class="bk-input" placeholder="รหัสไปรษณีย์ 5 หลัก" maxlength="5" inputmode="numeric"></label></div>
+              <div class="col-12 col-md-8 d-flex">
+                <div class="d-flex align-items-center gap-3 r-2xl p-3 w-100 shadow-xs" style="background:#fffbeb;border:1px solid rgba(253,230,138,.8);color:#451a03">
+                  <div class="d-flex flex-shrink-0 align-items-center justify-content-center rounded-circle text-white fw-bold text-xs" style="height:1.75rem;width:1.75rem;background:var(--amber500)">{% icon 'triangle-alert' 'i-4' %}</div>
+                  <div class="text-xs"><p class="fw-bold text-xs md-text-sm mb-0">หมายเหตุ : ราคาค่าบริการตรวจสอบ <span class="text-decoration-underline fw-extrabold">ไม่รวมค่าจัดส่งสินค้ากลับ</span></p><p class="fs-11px mb-0" style="color:rgba(146,64,14,.9)">โดยลูกค้าจะเป็นผู้รับผิดชอบค่าจัดส่งสินค้าคืนในภายหลัง</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ---------- 4. Product ---------- #}
+        <div class="d-grid gap-4" data-step="4" hidden>
+          <div><span class="bk-pill">Step 04/07</span><h2 class="bk-h2">4. PRODUCT DETAILS</h2><p class="text-xs text-n500 mt-1 mb-0">กรอกข้อมูลรายละเอียดสินค้า (ระบบจะนำข้อมูลแบรนด์ ประเภทสินค้า และแพ็กเกจไปคำนวณราคาจริงในขั้นตอนชำระเงิน)</p></div>
+          <div class="row g-3">
+            <div class="col-12 col-md-4"><label class="bk-field"><span>ประเภทสินค้า *</span>
+              <select name="category" class="bk-input"><option value="Bag">กระเป๋า (Bag)</option><option value="Watch">นาฬิกา (Watch)</option><option value="Clothes">เสื้อผ้า (Clothes)</option><option value="Shoes">รองเท้า (Shoes)</option><option value="Accessories">เครื่องประดับ (Accessories)</option></select></label></div>
+            <div class="col-12 col-md-4"><label class="bk-field"><span>แบรนด์ (Brand) *</span><select name="brand" class="bk-input"></select></label></div>
+            <div class="col-12 col-md-4"><label class="bk-field"><span>รุ่น (Model)</span><input name="model" class="bk-input" placeholder="เช่น Birkin 30, Submariner" maxlength="100"></label></div>
+          </div>
+          <div class="d-grid gap-2 pt-1"><span class="fs-11px fw-bold text-n400 text-uppercase ls-wider">แบรนด์ยอดนิยมในหมวด <span data-cat-name>Bag</span>:</span><div class="d-flex flex-wrap gap-1" id="brandChips"></div></div>
+          <label class="bk-field"><span>หมายเหตุเพิ่มเติม</span><textarea name="note" rows="3" class="bk-input" placeholder="เช่น ต้องการเน้นตรวจฮาร์ดแวร์ / สภาพใช้งานหนัก / อุปกรณ์ไม่ครบ" maxlength="2000"></textarea></label>
+        </div>
+
+        {# ---------- 5. Photos ---------- #}
+        <div class="d-grid gap-4" data-step="5" hidden>
+          <div><span class="bk-pill">Step 05/07</span><h2 class="bk-h2">5. UPLOAD PHOTOS</h2><p class="text-xs text-n500 mt-1 mb-0">อัปโหลดรูปภาพสินค้าจริงมุมต่างๆ (สามารถแนบรูปภาพได้สูงสุด 20 รูป)</p></div>
+          <label class="bk-drop" id="photoDrop">
+            {% icon 'upload' 'i-10 text-n400 mb-2' %}
+            <span class="text-sm fw-bold text-n800">กดเพื่อเลือกรูปภาพ หรือ ลากไฟล์มาวาง</span>
+            <span class="text-xs text-n400 mt-1">รองรับ JPG, PNG, WebP ขนาดไม่เกิน 8MB ต่อรูป (สูงสุด 20 รูป)</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden id="photoInput">
+          </label>
+          <div id="photoList" hidden><h4 class="text-xs fw-bold text-n500 mb-2">รูปภาพที่แนบแล้ว (<span data-photo-count>0</span>/20)</h4><div class="bk-thumbs" id="photoGrid"></div></div>
+        </div>
+
+        {# ---------- 6. Date & time ---------- #}
+        <div class="d-grid gap-4" data-step="6" hidden>
+          <div><span class="bk-pill">Step 06/07</span><h2 class="bk-h2">6. SELECT DATE &amp; TIME</h2><p class="text-xs text-n500 mt-1 mb-0">เลือกวันที่และช่วงเวลานัดหมายเข้าใช้บริการ</p></div>
+          <label class="bk-field"><span>เลือกวันที่นัดหมาย *</span><input type="date" name="date" min="{{ today }}" max="{{ max_date }}" class="bk-input"></label>
+          <div class="d-grid gap-2"><span class="d-block text-xs fw-bold text-n700 text-uppercase">เลือกช่วงเวลา (Time Slots)</span>
+            <div class="bk-slots">{% for t in time_slots %}<button type="button" class="bk-slot{% if forloop.first %} sel{% endif %}" data-slot="{{ t }}">{{ t }} น.</button>{% endfor %}</div></div>
+        </div>
+
+        {# ---------- 7. Summary & payment ---------- #}
+        <div class="d-grid gap-4" data-step="7" hidden>
+          <div><span class="bk-pill">Step 07/07</span><h2 class="bk-h2">7. SUMMARY &amp; PAYMENT</h2><p class="text-xs text-n500 mt-1 mb-0">สรุปยอดชำระสุทธิ เลือกช่องทางชำระเงิน และยืนยันการทำรายการจอง</p></div>
+          <div class="r-2xl border border-n200 bg-white p-3 d-grid gap-2 shadow-xs">
+            <label class="d-block text-xs fw-bold text-n800 text-uppercase ls-wider">โค้ดส่วนลด / Promo Code (Voucher)</label>
+            <div class="d-flex gap-2"><input name="promo_code" class="bk-input bg-n50 font-monospace fw-bold text-uppercase py-2" placeholder="กรอกโค้ดส่วนลด (เช่น PROMO1000)" maxlength="50"><button type="button" class="bk-small-dark" id="promoBtn">ใช้งาน</button></div>
+            <div class="d-flex align-items-center gap-1 text-xs fw-bold px-3 py-2 r-lg" style="color:#047857;background:#ecfdf5;border:1px solid #a7f3d0" id="promoOk" hidden>{% icon 'circle-check' 'i-4' %}<span></span></div>
+          </div>
+          <div id="quoteBox"></div>
+          <div class="d-grid gap-2">
+            <label class="d-block text-xs fw-bold text-n700 text-uppercase">ช่องทางชำระเงิน</label>
+            <select name="payment_method" class="bk-input fw-semibold">
+              <option value="shop">ชำระเงินที่สาขา (Pay at Store)</option>
+              <option value="transfer">โอนเงินผ่านบัญชีธนาคาร (ธ.กสิกรไทย) และแนบสลิป</option>
+              <option value="promptpay">สแกน QR Code PromptPay (โอนเงินและแนบสลิป)</option>
+              <option value="wallet">ตัดเครดิตสะสมสมาชิก (ต้องเข้าสู่ระบบ){% if customer %} — คงเหลือ {{ customer.credit_balance|baht }} บาท{% endif %}</option>
+            </select>
+          </div>
+          <div class="d-grid gap-4 border-top pt-4" id="payBox" hidden>
+            <div class="bk-dark">
+              <div class="d-flex align-items-center justify-content-between pb-3" style="border-bottom:1px solid var(--n800)">
+                <span class="text-xs fw-bold text-uppercase ls-wider" style="color:#34d399">โอนเงินผ่านธนาคาร / PromptPay</span>
+                <span class="fs-10px fw-semibold px-2 py-1 rounded" style="background:rgba(16,185,129,.2);color:#6ee7b7">รอผู้ดูแลตรวจสอบสลิป</span>
+              </div>
+              <div class="row g-3 align-items-center">
+                <div class="col-12 col-md-6 d-grid gap-2 text-xs">
+                  <div class="box d-flex align-items-center gap-3">
+                    <div class="flex-shrink-0 r-lg overflow-hidden bg-white p-1" style="height:2.5rem;width:2.5rem"><img src="{% static 'img/kplus-logo.webp' %}" alt="KBank Logo" class="w-100 h-100" style="object-fit:contain"></div>
+                    <div><span class="fw-bold text-sm text-white d-block">{{ bank.bank_name }}</span><span class="text-n400 fs-11px d-block">{{ bank.account_name }}</span></div>
+                  </div>
+                  <div class="box d-flex justify-content-between align-items-center" style="background:rgba(38,38,38,.8)">
+                    <div><span class="text-n400 d-block fs-10px">เลขที่บัญชี (ACCOUNT NUMBER)</span><span class="font-monospace text-base fw-extrabold" style="color:#34d399">{{ bank.account_number }}</span></div>
+                    <button type="button" class="px-2 py-1 text-white fs-11px fw-bold r-lg border-0" style="background:#059669" id="copyAcct" data-acct="{{ bank.account_number }}">คัดลอกเลขบัญชี</button>
+                  </div>
+                  <p class="fs-11px text-n400 mb-0">* โอนเข้าบัญชีบริษัทข้างต้น หรือสแกน QR Code แล้วแนบสลิปด้านล่างเพื่อยืนยันการจอง</p>
+                </div>
+                <div class="col-12 col-md-6" id="qrBox"></div>
+              </div>
+            </div>
+            <div class="r-2xl border border-n200 bg-n50 p-4 d-grid gap-3">
+              <div class="d-flex align-items-center justify-content-between"><span class="text-xs fw-bold text-n900 text-uppercase">หลักฐานการโอนเงิน (อัปโหลดสลิป) *</span><span class="fs-11px text-n500">รองรับไฟล์ JPG, PNG, WEBP</span></div>
+              <div id="slipPreview" class="d-flex align-items-center gap-3 bg-white p-3 r-xl" style="border:1px solid #a7f3d0" hidden>
+                <img alt="สลิปโอนเงิน" class="r-lg border" style="height:4rem;width:3rem;object-fit:cover">
+                <div class="flex-grow-1 d-grid gap-1"><span class="d-inline-block fs-10px fw-bold px-2 py-1 rounded-pill" style="width:fit-content;background:#d1fae5;color:#065f46">แนบสลิปแล้ว — ยังไม่ยืนยันการรับเงิน</span><p class="text-xs text-n600 fw-medium mb-0">สลิปพร้อมสำหรับการยืนยันการจองคิว</p></div>
+                <label class="text-xs fw-bold text-n700 text-decoration-underline mb-0" role="button">เปลี่ยนรูป<input type="file" accept="image/jpeg,image/png,image/webp" hidden data-slip-input></label>
+              </div>
+              <label id="slipDrop" class="d-flex flex-column align-items-center justify-content-center p-4 r-xl text-center gap-2 mb-0" role="button" style="border:2px dashed var(--n300)">
+                {% icon 'upload' 'i-6' %}<span class="text-xs fw-bold text-n800">คลิกที่นี่เพื่อแนบสลิปการโอนเงิน</span><span class="fs-11px text-n500">ผู้ดูแลจะตรวจสอบยอดและหลักฐานก่อนยืนยันการรับเงิน</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-slip-input>
+              </label>
+            </div>
+          </div>
+          <label class="d-flex align-items-start gap-3 pt-2" role="button">
+            <input type="checkbox" id="acceptTerms" class="mt-1" style="height:1rem;width:1rem;accent-color:#000">
+            <span class="text-xs text-n600 lh-relaxed">ข้าพเจ้ายอมรับ <a href="{% url 'website:terms' %}" class="text-decoration-underline fw-bold text-black" target="_blank">เงื่อนไขและข้อตกลงการให้บริการ</a> ของ TRUST LAB THAILAND ในการนำสินค้าเข้าตรวจเช็คความแท้</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between border-top pt-4 mt-5">
+        <button type="button" class="bk-btn-back" id="backBtn" hidden>&lt; ย้อนกลับ (BACK)</button>
+        <button type="button" class="bk-btn-next" id="nextBtn">ขั้นตอนต่อไป (NEXT) &gt;</button>
+      </div>
+    </div>
+  </div>
+</div>
+{{ category_brands|json_script:"categoryBrands" }}
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+  const URLS = { quote: '{% url "website:booking_quote" %}', promptpay: '{% url "website:booking_promptpay" %}', create: '{% url "website:booking_create" %}' };
+  const BRANDS = JSON.parse(document.getElementById('categoryBrands').textContent);
+  const PKG_LABEL = { cert_90d: 'ตรวจสินค้าพร้อมใบรับรอง (90 วัน)', cert_15d: 'ตรวจสินค้าพร้อมใบรับรอง (15 วัน)', photo_review: 'ตรวจจากรูป (Photo Review)' };
+  const root = document.getElementById('bkWizard');
+  const $ = s => root.querySelector(s);
+  const field = name => root.querySelector('[name="' + name + '"]');
+  const val = name => { const c = root.querySelector('[name="' + name + '"]:checked'); return (c ? c.value : (field(name) ? field(name).value : '')).trim(); };
+  const S = {
+    step: 1, branch: ($('[data-branch].sel') || {}).dataset ? $('[data-branch].sel').dataset.branch : '',
+    pkg: 'cert_90d', slot: ($('.bk-slot.sel') || {}).dataset ? $('.bk-slot.sel').dataset.slot : '',
+    photos: [], slip: '', quote: null, busy: false, key: TL.uuid()
+  };
+
+  function error(msg) {
+    const box = document.getElementById('bkError');
+    box.hidden = !msg; box.querySelector('span').textContent = msg || '';
+  }
+  const isPhoto = () => S.pkg === 'photo_review';
+
+  function valid(step) {
+    switch (step) {
+      case 1: return !!S.branch;
+      case 2: return !!S.pkg;
+      case 3: {
+        if (!val('customer_name') || !val('phone')) return false;
+        if (isPhoto() || val('delivery_method') === 'self_pickup') return true;
+        return ['return_address_name', 'return_phone', 'return_address_detail', 'return_province', 'return_district', 'return_subdistrict'].every(f => val(f)) && /^\d{5}$/.test(val('return_postal_code'));
+      }
+      case 4: return !!val('brand') && !!val('category');
+      case 5: return S.photos.length >= 1;
+      case 6: return !!val('date') && !!S.slot;
+      case 7: return document.getElementById('acceptTerms').checked && !!S.quote && (!['promptpay', 'transfer'].includes(val('payment_method')) || !!S.slip);
+    }
+    return true;
+  }
+
+  function render() {
+    root.querySelectorAll('[data-step]').forEach(p => { p.hidden = Number(p.dataset.step) !== S.step; });
+    root.querySelectorAll('[data-step-nav]').forEach(n => {
+      const i = Number(n.dataset.stepNav);
+      n.classList.toggle('active', i === S.step); n.classList.toggle('done', i < S.step);
+      const b = n.querySelector('.num'); b.disabled = !(i < S.step);
+      b.innerHTML = i < S.step ? TL.icon('check', 'i-4') : i;
+    });
+    document.getElementById('backBtn').hidden = S.step === 1;
+    const next = document.getElementById('nextBtn');
+    next.textContent = S.step < 7 ? 'ขั้นตอนต่อไป (NEXT) >' : (S.busy ? 'กำลังบันทึก...' : 'ยืนยันการจองคิว →');
+    next.disabled = S.busy || !valid(S.step);
+    document.getElementById('deliveryBox').hidden = isPhoto();
+    const ship = !isPhoto() && val('delivery_method') === 'shipping';
+    root.querySelectorAll('[data-ship-only]').forEach(el => { el.hidden = !ship; });
+  }
+
+  function invalidateQuote() { S.quote = null; S.slip = ''; renderSlip(); document.getElementById('qrBox').innerHTML = ''; }
+
+  // --- step 1 / 2 selections
+  root.querySelectorAll('[data-branch]').forEach(b => b.addEventListener('click', () => {
+    S.branch = b.dataset.branch; root.querySelectorAll('[data-branch]').forEach(x => x.classList.toggle('sel', x === b)); invalidateQuote(); render();
+  }));
+  function setPkg(code) {
+    S.pkg = code;
+    $('[data-pkg="photo_review"]').classList.toggle('sel', code === 'photo_review');
+    $('[data-pkg="cert"]').classList.toggle('sel', code !== 'photo_review');
+    root.querySelector('[name=pkg_group][value=photo]').checked = code === 'photo_review';
+    root.querySelector('[name=pkg_group][value=cert]').checked = code !== 'photo_review';
+    root.querySelectorAll('[data-validity]').forEach(v => v.classList.toggle('sel', v.dataset.validity === code));
+    if (code === 'photo_review') root.querySelector('[name=delivery_method][value=self_pickup]').checked = true;
+    invalidateQuote(); render();
+  }
+  $('[data-pkg="photo_review"]').addEventListener('click', () => setPkg('photo_review'));
+  $('[data-pkg="cert"]').addEventListener('click', () => { if (isPhoto()) setPkg('cert_15d'); });
+  root.querySelectorAll('[data-validity]').forEach(v => v.addEventListener('click', e => { e.stopPropagation(); setPkg(v.dataset.validity); }));
+  const preset = new URLSearchParams(location.search).get('package');
+  if (['photo_review', 'cert_15d', 'cert_90d'].includes(preset)) setPkg(preset);
+
+  // --- step 3 customer type (members sign in instead of a public phone search)
+  root.querySelectorAll('[data-ctype]').forEach(b => b.addEventListener('click', () => {
+    root.querySelectorAll('[data-ctype]').forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('memberBox').hidden = b.dataset.ctype !== 'member';
+  }));
+
+  // --- step 4 brands
+  function fillBrands() {
+    const cat = val('category'), list = BRANDS[cat] || [], sel = field('brand'), current = sel.value;
+    sel.innerHTML = '<option value="">-- เลือกแบรนด์ (' + cat + ') --</option>' + list.map(b => '<option value="' + TL.esc(b) + '">' + TL.esc(b) + '</option>').join('') + '<option value="other">-- แบรนด์อื่นๆ (ระบุในหมายเหตุ) --</option>';
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    root.querySelector('[data-cat-name]').textContent = cat;
+    document.getElementById('brandChips').innerHTML = list.slice(0, 10).map(b => '<button type="button" class="bk-chip' + (sel.value.toLowerCase() === b.toLowerCase() ? ' sel' : '') + '" data-chip="' + TL.esc(b) + '">' + TL.esc(b) + '</button>').join('');
+  }
+  field('category').addEventListener('change', () => { fillBrands(); invalidateQuote(); render(); });
+  field('brand').addEventListener('change', () => { fillBrands(); invalidateQuote(); render(); });
+  document.getElementById('brandChips').addEventListener('click', e => { const c = e.target.closest('[data-chip]'); if (!c) return; field('brand').value = c.dataset.chip; fillBrands(); invalidateQuote(); render(); });
+  fillBrands();
+
+  // --- step 5 photos
+  async function addPhotos(files) {
+    files = Array.from(files || []);
+    if (S.photos.length + files.length > 20) { error('สามารถแนบรูปภาพได้สูงสุด 20 ภาพ'); return; }
+    for (const f of files) { try { S.photos.push(await TL.readImage(f)); } catch (err) { error(err.message); } }
+    renderPhotos(); render();
+  }
+  function renderPhotos() {
+    document.getElementById('photoList').hidden = !S.photos.length;
+    root.querySelector('[data-photo-count]').textContent = S.photos.length;
+    document.getElementById('photoGrid').innerHTML = S.photos.map((p, i) => '<div class="bk-thumb"><img src="' + p + '" alt="รูปสินค้า ' + (i + 1) + '"><button type="button" data-del="' + i + '">' + TL.icon('trash-2', 'i-5') + '</button></div>').join('');
+  }
+  document.getElementById('photoInput').addEventListener('change', e => { addPhotos(e.target.files); e.target.value = ''; });
+  const drop = document.getElementById('photoDrop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = '#000'; });
+  drop.addEventListener('dragleave', () => { drop.style.borderColor = ''; });
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.style.borderColor = ''; addPhotos(e.dataTransfer.files); });
+  document.getElementById('photoGrid').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (!b) return; S.photos.splice(Number(b.dataset.del), 1); renderPhotos(); render(); });
+
+  // --- step 6 slots
+  root.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => { S.slot = b.dataset.slot; root.querySelectorAll('[data-slot]').forEach(x => x.classList.toggle('sel', x === b)); render(); }));
+
+  // --- quote & payment
+  function payload() {
+    const note = [val('note'), val('tax_invoice_no') ? 'ขอใบกำกับภาษี เลขที่: ' + val('tax_invoice_no') : ''].filter(Boolean).join('\n');
+    const d = {
+      request_key: S.key, branch_id: S.branch, service_package: S.pkg, category: val('category'),
+      brand: val('brand') === 'other' ? 'Other' : val('brand'), model: val('model') || '-', note: note,
+      date: val('date'), time_slot: S.slot, delivery_method: isPhoto() ? 'self_pickup' : val('delivery_method'),
+      customer_name: val('customer_name'), phone: val('phone'), email: val('email'),
+      promo_code: val('promo_code').toUpperCase(), payment_method: val('payment_method')
+    };
+    if (d.delivery_method === 'shipping') ['return_address_name', 'return_phone', 'return_address_detail', 'return_subdistrict', 'return_district', 'return_province', 'return_postal_code'].forEach(f => { d[f] = val(f); });
+    return d;
+  }
+  function renderQuote() {
+    const box = document.getElementById('quoteBox'), q = S.quote;
+    const ok = document.getElementById('promoOk');
+    ok.hidden = !(q && q.promo_code && Number(q.promo_discount_amount) > 0);
+    if (q) ok.querySelector('span').textContent = 'ใช้โค้ดส่วนลด ' + q.promo_code + ' สำเร็จ! ประหยัด ' + q.promo_discount_amount + ' บาท';
+    if (!q) {
+      box.innerHTML = '<div class="r-2xl p-4 text-center d-grid gap-3" style="border:1px solid #fde68a;background:rgba(255,251,235,.7)"><p class="text-xs fw-semibold mb-0" style="color:#78350f">' +
+        (S.busy ? 'กำลังคำนวณสรุปยอดชำระเงิน...' : 'ยังไม่ได้คำนวณยอดชำระเงิน (อาจเกิดจากข้อผิดพลาดก่อนหน้า)') + '</p>' +
+        '<button type="button" class="bk-small-dark mx-auto" data-recalc' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'กำลังคำนวณ...' : 'กดคำนวณยอดชำระเงินอีกครั้ง') + '</button></div>';
+      return;
+    }
+    const line = (l, v, cls) => '<div class="' + (cls || '') + '"><span>' + l + '</span><span>' + v + '</span></div>';
+    let html = '<div class="r-2xl border border-n200 bg-n50 p-4 d-grid gap-2 text-sm bk-sum">';
+    html += line('แพ็กเกจบริการ', '<span class="fw-semibold text-n900">' + PKG_LABEL[S.pkg] + '</span>', 'border-bottom pb-2 text-n500');
+    if (Number(q.service_amount_before_discount) > Number(q.service_amount)) html += line('ราคาปกติ', q.service_amount_before_discount + ' บาท', 'text-n400 text-decoration-line-through');
+    if (Number(q.promo_discount_amount) > 0) html += line('ส่วนลดโปรโมชัน (' + TL.esc(q.promo_code) + ')', '-' + q.promo_discount_amount + ' บาท', 'fw-semibold" style="color:#047857');
+    html += line('<span class="text-n600">ค่าบริการสุทธิ ' + (q.prices_include_vat ? '(รวม VAT 7%)' : '') + '</span>', '<span class="fw-semibold">' + q.service_amount + ' บาท</span>');
+    html += line('<span class="text-n600">ค่าจัดส่งคืน</span>', '<span class="fw-semibold">' + q.shipping_fee + ' บาท</span>');
+    if (!q.prices_include_vat) html += line('VAT 7%', q.vat_amount + ' บาท', 'text-n500');
+    html += '<div class="border-top pt-3 text-xl fw-black" style="color:var(--n950);font-size:1.25rem!important"><span>ยอดชำระสุทธิ</span><span style="color:#047857">' + q.total + ' บาท</span></div></div>';
+    box.innerHTML = html;
+  }
+  async function calcQuote() {
+    S.busy = true; renderQuote(); render(); error('');
+    try { S.quote = (await TL.api(URLS.quote, { method: 'POST', body: payload() })).data; await loadQr(); }
+    catch (err) { S.quote = null; error(err.message); }
+    S.busy = false; renderQuote(); render();
+  }
+  async function loadQr() {
+    const box = document.getElementById('qrBox');
+    box.innerHTML = '';
+    if (val('payment_method') !== 'promptpay' || !S.quote) return;
+    box.innerHTML = '<div class="text-center p-4 r-xl text-xs text-n400" style="background:var(--n800)">กำลังสร้าง QR Code Payment...</div>';
+    try {
+      const r = await TL.api(URLS.promptpay, { method: 'POST', body: { quote_token: S.quote.quote_token } });
+      box.innerHTML = '<div class="text-center d-grid gap-2 bg-white p-3 r-xl text-n900"><img src="' + r.data.qr_image + '" alt="QR Code PromptPay" width="180" height="180" class="mx-auto r-lg"><span class="d-block fs-10px fw-bold text-n500 text-uppercase ls-wider">สแกนจ่ายผ่าน Mobile Banking</span></div>';
+    } catch (err) { box.innerHTML = '<div class="text-center p-4 r-xl text-xs" style="background:var(--n800);color:#fca5a5">' + TL.esc(err.message) + '</div>'; }
+  }
+  document.getElementById('quoteBox').addEventListener('click', e => { if (e.target.closest('[data-recalc]')) calcQuote(); });
+  document.getElementById('promoBtn').addEventListener('click', calcQuote);
+  field('payment_method').addEventListener('change', () => {
+    S.slip = ''; renderSlip();
+    document.getElementById('payBox').hidden = !['promptpay', 'transfer'].includes(val('payment_method'));
+    loadQr(); render();
+  });
+  function renderSlip() {
+    const prev = document.getElementById('slipPreview');
+    prev.hidden = !S.slip; document.getElementById('slipDrop').hidden = !!S.slip;
+    if (S.slip) prev.querySelector('img').src = S.slip;
+  }
+  root.querySelectorAll('[data-slip-input]').forEach(inp => inp.addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try { S.slip = await TL.readImage(f, 1400, .9); renderSlip(); render(); } catch (err) { error(err.message); }
+  }));
+  document.getElementById('copyAcct').addEventListener('click', e => { navigator.clipboard.writeText(e.currentTarget.dataset.acct).then(() => TL.toast('คัดลอกเลขบัญชีแล้ว')).catch(() => error('คัดลอกเลขบัญชีไม่สำเร็จ')); });
+  document.getElementById('acceptTerms').addEventListener('change', render);
+
+  // Any change in the inputs re-checks the step (and clears an old quote where it matters).
+  root.addEventListener('input', e => {
+    if (['customer_name', 'phone', 'email', 'tax_invoice_no', 'model', 'note', 'date'].includes(e.target.name) ||
+        e.target.name && e.target.name.startsWith('return_')) { /* no re-price needed */ }
+    if (e.target.name === 'promo_code' && S.quote) { invalidateQuote(); renderQuote(); }
+    render();
+  });
+  root.addEventListener('change', e => { if (e.target.name === 'delivery_method') { invalidateQuote(); } render(); });
+
+  async function submit() {
+    S.busy = true; render(); error('');
+    try {
+      const body = Object.assign(payload(), { quote_token: S.quote.quote_token, photos: S.photos, slip: S.slip });
+      const res = await TL.api(URLS.create, { method: 'POST', body: body });
+      showSuccess(res.data, body);
+    } catch (err) { error(err.message); }
+    S.busy = false; render();
+  }
+  function showSuccess(r, body) {
+    root.hidden = true;
+    const box = document.getElementById('bkSuccess'); box.hidden = false;
+    document.getElementById('okTitle').textContent = 'รับรายการจอง #' + r.booking_id + ' เรียบร้อยแล้ว';
+    document.getElementById('okStatus').textContent = r.payment_status === 'paid' ? 'ระบบตัดชำระด้วยเครดิตสมาชิกเรียบร้อยแล้ว'
+      : r.payment_status === 'pending_review' ? 'แนบสลิปเรียบร้อยแล้ว รอเจ้าหน้าที่ตรวจสอบยอดเงิน' : 'รอรับชำระและส่งมอบสินค้า ณ สาขาที่นัดหมาย';
+    const row = (l, v) => '<div class="d-flex justify-content-between border-bottom pb-2"><span class="text-n500">' + l + '</span><span class="fw-semibold text-n900">' + v + '</span></div>';
+    document.getElementById('okRows').innerHTML = row('รหัสอ้างอิงจอง', '<span class="font-monospace fw-bold">#' + TL.esc(r.booking_id) + '</span>') +
+      row('ชื่อผู้จอง', TL.esc(body.customer_name) + ' (' + TL.esc(body.phone) + ')') + row('สินค้า', TL.esc(body.brand) + ' ' + TL.esc(body.model) + ' (' + TL.esc(body.category) + ')') +
+      row('วันเวลานัดหมาย', TL.esc(body.date) + ' ช่วงเวลา ' + TL.esc(body.time_slot) + ' น.') +
+      (S.quote ? '<div class="d-flex justify-content-between text-base pt-1 fw-bold"><span>ยอดชำระสุทธิ</span><span class="fw-extrabold" style="color:#047857">' + S.quote.total + ' บาท</span></div>' : '');
+    document.getElementById('okReceipt').href = r.receipt_url;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', async () => {
+    if (S.step === 7) { if (valid(7)) submit(); return; }
+    if (!valid(S.step)) return;
+    S.step += 1; render();
+    if (S.step === 7 && !S.quote) await calcQuote();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  document.getElementById('backBtn').addEventListener('click', () => { if (S.step > 1) { S.step -= 1; render(); } });
+  root.querySelectorAll('[data-step-nav] .num').forEach((b, i) => b.addEventListener('click', () => { if (i + 1 < S.step) { S.step = i + 1; render(); } }));
+  renderQuote(); render();
+})();
+</script>
+{% endblock %}

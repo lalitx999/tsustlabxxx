@@ -1,0 +1,17 @@
+{% extends 'backoffice/layout.html' %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='Analytics' subtitle='ข้อมูลสถิติเชิงลึกเกี่ยวกับการตรวจสอบและการกระจายตัวของสินค้า' %}
+  <div class="bo-panel p-4 d-grid gap-3">
+    <h3 class="bo-panel-h muted">สัดส่วนหมวดหมู่สินค้าในฐานข้อมูล</h3>
+    {% if not total %}<p class="text-xs text-n400 pt-2 mb-0">ยังไม่มีข้อมูลงานตรวจในระบบ</p>{% else %}
+    <div class="d-grid gap-3 text-xs pt-2">
+      {% for r in rows %}
+      <div><div class="d-flex justify-content-between fw-bold text-n800"><span>{{ forloop.counter }}. {{ r.category }}</span><span>{{ r.n }} ชิ้น ({{ r.percent }}%)</span></div>
+        <div class="bo-bar mt-1"><div style="width:{{ r.percent }}%;border-radius:0"></div></div></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

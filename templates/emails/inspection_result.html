@@ -1,0 +1,14 @@
+{% extends 'emails/base.html' %}
+{% block title %}แจ้งผลการตรวจสอบ - TRUST LAB{% endblock %}
+{% block subtitle %}แจ้งผลการตรวจสินค้า (INSPECTION COMPLETE){% endblock %}
+{% block body %}
+<p style="margin-top:0;">เรียน คุณ <strong>{{ job.customer.full_name }}</strong>,</p>
+<p>ผู้เชี่ยวชาญ TRUST LAB THAILAND ได้ตรวจวิเคราะห์สินค้าของท่านเสร็จสิ้นแล้ว</p>
+<div style="text-align:center;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:24px;">
+  <small style="color:#6B7280;">ผลการตรวจวิเคราะห์ (INSPECTION RESULT)</small><br>
+  <span style="display:inline-block;margin-top:8px;padding:6px 14px;border-radius:20px;font-weight:800;font-size:12px;
+    {% if badge == 'authentic' %}background:#ECFDF5;color:#047857;{% elif badge == 'fake' %}background:#FEF2F2;color:#B91C1C;{% else %}background:#FFFBEB;color:#B45309;{% endif %}">{{ result_label }}</span>
+  <p style="margin:16px 0 0;"><strong>{{ job.brand }} {{ job.model }}</strong><br><small>Job {{ job.display_id }}{% if cert_code %} · Certificate {{ cert_code }}{% endif %}</small></p>
+</div>
+{% if cert_code %}<p style="text-align:center;margin-top:24px;"><a href="{{ site_url }}/verify/?id={{ cert_code|urlencode }}" style="background:#111827;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;">ตรวจสอบผลการตรวจออนไลน์</a></p>{% endif %}
+{% endblock %}

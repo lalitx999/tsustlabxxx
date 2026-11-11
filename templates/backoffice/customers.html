@@ -1,0 +1,33 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='Customer Directory' subtitle='ข้อมูลประวัติและระดับสมาชิกลูกค้าทั้งหมดในฐานข้อมูล' %}
+  <form id="filters" class="bo-filters"><label>ค้นหาชื่อลูกค้า / เบอร์โทร<input name="q" class="bo-in" placeholder="ชื่อหรือเบอร์โทร"></label></form>
+  <div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table">
+    <thead><tr><th>Customer ID</th><th>ชื่อ-นามสกุล</th><th>เบอร์โทรศัพท์</th><th>อีเมล</th><th>LINE ID</th><th>ระดับสมาชิก</th><th>วันที่ลูกค้า / สมาชิก</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="7" class="text-center py-5 text-n400">กำลังดึงข้อมูล...</td></tr></tbody>
+  </table></div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const rows = document.getElementById('rows'), form = document.getElementById('filters');
+  let timer;
+  async function load() {
+    try {
+      const data = (await TL.api('{% url "backoffice:customer_rows" %}?' + new URLSearchParams(TL.formData(form)))).data;
+      rows.innerHTML = data.map(c => '<tr><td class="fw-black" style="color:var(--n950)">#' + c.id + '</td><td>' + TL.esc(c.full_name) + '</td>' +
+        '<td class="text-n500 fw-medium">' + TL.esc(c.phone_number) + '</td><td class="font-monospace">' + TL.esc(c.email || '-') + '</td><td>' + TL.esc(c.line_id || '-') + '</td>' +
+        '<td><span class="pill ' + (c.membership_level === 'Partner' ? 'p-purple' : 'p-neutral') + '">' + TL.esc(c.membership_level) + '</span></td>' +
+        '<td class="text-n500 fw-medium">' + (c.first_service_at ? new Date(c.first_service_at).toLocaleDateString('th-TH') : '-') + '</td></tr>').join('') ||
+        '<tr><td colspan="7" class="text-center py-5 text-n400">ไม่พบลูกค้า</td></tr>';
+    } catch (err) { rows.innerHTML = '<tr><td colspan="7" class="text-center py-4" style="color:#b91c1c">เกิดข้อผิดพลาด: ' + TL.esc(err.message) + '</td></tr>'; }
+  }
+  form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 300); });
+  form.addEventListener('submit', e => { e.preventDefault(); load(); });
+  load();
+})();
+</script>
+{% endblock %}

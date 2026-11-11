@@ -1,0 +1,243 @@
+{% extends 'website/layout.html' %}
+{% load static ui %}
+{% block title %}TRUST LAB THAILAND | Professional Luxury Authentication Laboratory{% endblock %}
+{% block main_class %}bg-white{% endblock %}
+{% block content %}
+{# ---------------- Hero banner ---------------- #}
+<section class="hero" id="hero">
+  <div class="hero-bg" id="heroBg" style="background-image:url('{% static slides.0.0 %}')"></div>
+  <div class="hero-shade"></div><div class="hero-shade-b"></div>
+  <div class="hero-counter"><span id="heroIndex">01</span> / {{ slides|length|stringformat:"02d" }}</div>
+  <div class="container-custom hero-content">
+    <div class="max-w-2xl">
+      <p class="hero-eyebrow">{% t 'eyebrow' %}</p>
+      <h1>TRUST LAB THAILAND<span>VERIFY INSPECT ASSURE</span></h1>
+      <p class="hero-desc" id="heroText">{{ slides.0.1 }}</p>
+      <div class="hero-ctas">
+        <a href="{% url 'website:booking' %}" class="cta-white">{% t 'bookAuth' %}</a>
+        <a href="{% url 'website:verify' %}" class="cta-outline">{% t 'verifyCert' %}</a>
+        <a href="{% url 'website:partner' %}" class="cta-link">{% t 'becomePartner' %} {% icon 'hi-chevron-right' 'i-4' %}</a>
+      </div>
+      <div class="hero-dots" id="heroDots">
+        {% for s in slides %}<button type="button" class="{% if forloop.first %}active{% endif %}" aria-label="Go to slide {{ forloop.counter }}"></button>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <button type="button" class="hero-arrow prev" data-dir="-1" aria-label="Previous slide">{% icon 'hi-chevron-left' 'i-5' %}</button>
+  <button type="button" class="hero-arrow next" data-dir="1" aria-label="Next slide">{% icon 'hi-chevron-right' 'i-5' %}</button>
+  <div hidden>{% for image, text in slides %}<span data-slide data-image="{% static image %}">{{ text }}</span>{% endfor %}</div>
+</section>
+
+{# ---------------- Why TRUST LAB ---------------- #}
+<section class="why">
+  <div class="container-custom">
+    <h2 class="text-2xl md-text-3xl fw-bold text-center text-black mb-3">{% t 'whyHeading' %}</h2>
+    <p class="text-center text-g500 max-w-2xl mx-auto mb-5 pb-2 text-sm md-text-base">{% t 'whySub' %}</p>
+    <div class="row g-4">
+      {% for icon_name, title, text in copy.features %}
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="why-card">
+          <div class="d-flex justify-content-center mb-3 text-n900">{% icon icon_name 'i-10 sw-15' %}</div>
+          <div><h3 class="text-base md-text-lg fw-semibold text-black mb-2">{{ title }}</h3><p class="text-sm text-g500 lh-relaxed mb-0">{{ text }}</p></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ---------------- 100+ checkpoints carousel ---------------- #}
+<section class="checkpoints">
+  <div class="container-custom">
+    <div class="row g-5 align-items-center">
+      <div class="col-12 col-lg-4 d-grid gap-4">
+        <h2 class="mb-0">{{ copy.cpHeadline|safe }}</h2>
+        <p class="text-xs ls-wider text-amber5 fw-semibold text-uppercase mb-0">{% t 'cpSub' %}</p>
+        <p class="text-sm md-text-base text-g400 fw-light lh-relaxed mb-0">{% t 'cpDesc' %}</p>
+        <div class="pt-1"><a href="{% url 'website:services' %}" class="btn-ghost-white">{% t 'cpButton' %} {% icon 'hi-chevron-right' 'i-4' %}</a></div>
+        <div class="d-none d-lg-flex align-items-center gap-2 pt-4">
+          <button type="button" class="round-btn" data-cp="-1" aria-label="Previous slide">{% icon 'hi-chevron-left' 'i-4' %}</button>
+          <button type="button" class="round-btn" data-cp="1" aria-label="Next slide">{% icon 'hi-chevron-right' 'i-4' %}</button>
+        </div>
+      </div>
+      <div class="col-12 col-lg-8 position-relative">
+        <div class="cp-track" id="cpTrack">
+          {% for icon_name, key, title, text in copy.cpCards %}
+          <div class="cp-card" data-cp-card>
+            <div class="cp-cover">
+              <img src="{% static 'img/images/authen/'|add:key|add:'.jpg' %}" alt="{{ title }}" loading="lazy">
+              <div class="cp-badge">{% icon icon_name 'i-5 sw-15' %}</div>
+            </div>
+            <div class="cp-body"><h3 class="text-sm fw-semibold ls-wider text-white mb-0">{{ title }}</h3><p class="text-xs text-n400 lh-relaxed fw-light mb-0">{{ text }}</p></div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="cp-dots" id="cpDots">{% for c in copy.cpCards %}<button type="button" class="{% if forloop.first %}active{% endif %}" aria-label="Go to slide {{ forloop.counter }}"></button>{% endfor %}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ---------------- Process steps ---------------- #}
+{% include 'website/_process_steps.html' %}
+
+{# ---------------- Brands & products ---------------- #}
+<section class="py-section bg-n100 text-black">
+  <div class="container-custom">
+    <div class="row g-4 g-md-5">
+      <div class="col-12 col-lg-6">
+        <div class="dark-panel">
+          <div class="d-grid gap-4">
+            <div><h3>{% t 'brandsTitle' %}</h3><p class="text-xs text-n400 fw-light mt-2 mb-0">{% t 'brandsSub' %}</p></div>
+            <div class="dark-search">{% icon 'hi-search' 'i-4' %}<input type="text" id="brandSearch" placeholder="{% t 'searchPlaceholder' %}" aria-label="{% t 'searchPlaceholder' %}"></div>
+            <div class="brand-grid" id="brandGrid">
+              {% for b in brands %}<a href="{% url 'website:services' %}?brand={{ b|lower|urlencode }}" class="brand-chip" data-brand="{{ b|lower }}">{{ b }}</a>{% endfor %}
+              <div class="brand-chip more" id="brandMore">&amp; MORE</div>
+              <div class="text-center text-xs text-n500 py-4 d-none" id="noBrands" style="grid-column:1/-1">{% t 'noBrandsFound' %}</div>
+            </div>
+          </div>
+          <div class="panel-foot"><a href="{% url 'website:services' %}">{% t 'viewAllBrands' %} {% icon 'hi-chevron-right' 'i-4' %}</a></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="dark-panel">
+          <div class="d-grid gap-4">
+            <div><h3>{% t 'productsTitle' %}</h3><p class="text-xs text-n400 fw-light mt-2 mb-0">{% t 'productsSub' %}</p></div>
+            <div class="product-grid">
+              {% for icon_name, label, sub in copy.products %}
+              <a href="{% url 'website:services' %}" class="product-tile">
+                {% icon icon_name 'i-8 sw-1' %}
+                <div><span class="fs-9px fw-bold ls-wider text-white d-block">{{ label }}</span>{% if sub %}<span class="fs-8px fw-medium text-n500 d-block lh-tight">{{ sub }}</span>{% endif %}</div>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="panel-foot"><a href="{% url 'website:services' %}">{% t 'viewAllCategories' %} {% icon 'hi-chevron-right' 'i-4' %}</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ---------------- Reviews & partners ---------------- #}
+<section class="trustee">
+  <div class="container-custom">
+    <div class="row g-5 align-items-center">
+      <div class="col-12 col-lg-6">
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-sm-4">
+            <a href="https://google.com" target="_blank" rel="noopener noreferrer" class="trust-item">
+              <div class="d-grid gap-1">
+                <span class="google-word">G<span class="r">o</span><span class="y">o</span>g<span class="gr">l</span>e</span>
+                <div class="fs-10px text-n400 fw-semibold text-uppercase ls-wider">Google Reviews</div>
+                <div class="d-flex align-items-center gap-1"><span class="stars" style="color:#eab308">{% for i in '12345' %}{% icon 'hi-star' %}{% endfor %}</span><span class="text-xs fw-bold">4.9/5</span></div>
+                <p class="fs-10px text-n500 fw-light mb-0">จาก 1,200+ รีวิว</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-sm-4">
+            <a href="https://trustpilot.com" target="_blank" rel="noopener noreferrer" class="trust-item">
+              <div class="d-grid gap-1">
+                <span class="text-sm fw-black ls-tight d-flex align-items-center gap-1" style="color:#10b981">{% icon 'hi-star' %} Trustpilot</span>
+                <div class="fs-10px text-n400 fw-semibold text-uppercase ls-wider">Trust Signal</div>
+                <div class="d-flex align-items-center gap-1"><span class="stars" style="color:#10b981">{% for i in '12345' %}{% icon 'hi-star' %}{% endfor %}</span><span class="text-xs fw-bold">4.8/5</span></div>
+                <p class="fs-10px text-n500 fw-light mb-0">จาก 850+ รีวิว</p>
+              </div>
+            </a>
+          </div>
+          <div class="col-12 col-sm-4">
+            <button type="button" class="trust-item" data-bs-toggle="modal" data-bs-target="#videoModal">
+              <span class="play-dot">{% icon 'hi-play' 'i-5' %}</span>
+              <span class="d-grid">
+                <span class="text-xs fw-bold ls-wider text-uppercase text-n900">VIDEO REVIEWS</span>
+                <span class="fs-10px text-n500 fw-light">รีวิวจากลูกค้าจริง</span>
+                <span class="fs-9px fw-medium text-amber6">ดูวิดีโอเพิ่มเติม</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 partners-col d-grid gap-4">
+        <div class="text-center text-lg-start">
+          <h4 class="text-xs fw-bold ls-widest text-n400 text-uppercase mb-1">OUR PARTNERS</h4>
+          <p class="text-xs text-n500 fw-light mb-0">เครือข่ายร้านค้าและพันธมิตรที่เลือกใช้บริการตรวจของสถาบันเรา</p>
+        </div>
+        <div class="partner-grid">
+          {% for icon_name, name, label in partners %}
+          <div class="partner-tile">{% icon icon_name 'i-6 sw-15' %}<div><span class="fs-8px fw-bold text-n800 d-block lh-tight">{{ name }}</span><span class="fs-7px text-n500 d-block lh-tight fw-medium">{{ label }}</span></div></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content r-3xl overflow-hidden" style="background:var(--n950);border:1px solid var(--n800)">
+      <div class="d-flex justify-content-between align-items-center px-4 py-3" style="border-bottom:1px solid var(--n900)">
+        <h3 class="text-sm fw-bold ls-wider text-white text-uppercase mb-0">TRUST LAB - CUSTOMER VIDEO REVIEW</h3>
+        <button type="button" class="btn btn-link text-n500 text-sm fw-semibold text-decoration-none d-flex align-items-center gap-1 p-1" data-bs-dismiss="modal" aria-label="Close modal">{% icon 'hi-x' 'i-4' %} CLOSE</button>
+      </div>
+      <div class="ratio ratio-16x9 bg-black">
+        {% if review_video_url %}<iframe data-src="{{ review_video_url }}" title="Trust Lab Customer Review Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        {% else %}<div class="d-flex align-items-center justify-content-center text-n500 text-sm">ยังไม่ได้ตั้งค่าวิดีโอรีวิว</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+  // Hero: manual slides like the old site (no auto-play).
+  const slides = [...document.querySelectorAll('[data-slide]')];
+  const bg = document.getElementById('heroBg'), text = document.getElementById('heroText'), index = document.getElementById('heroIndex');
+  const dots = [...document.querySelectorAll('#heroDots button')];
+  let current = 0;
+  function show(i) {
+    current = (i + slides.length) % slides.length;
+    bg.style.backgroundImage = "url('" + slides[current].dataset.image + "')";
+    text.textContent = slides[current].textContent;
+    index.textContent = String(current + 1).padStart(2, '0');
+    dots.forEach((d, n) => d.classList.toggle('active', n === current));
+  }
+  dots.forEach((d, n) => d.addEventListener('click', () => show(n)));
+  document.querySelectorAll('.hero-arrow').forEach(b => b.addEventListener('click', () => show(current + Number(b.dataset.dir))));
+  slides.forEach(s => { const img = new Image(); img.src = s.dataset.image; });
+
+  // Checkpoints: show 3 cards starting from `start`, same as the old carousel.
+  const cards = [...document.querySelectorAll('[data-cp-card]')];
+  const cpDots = [...document.querySelectorAll('#cpDots button')];
+  let start = 0;
+  function renderCards() {
+    const order = cards.map((_, i) => (i - start + cards.length) % cards.length);
+    const track = document.getElementById('cpTrack');
+    cards.map((c, i) => [order[i], c]).sort((a, b) => a[0] - b[0]).forEach(([pos, c]) => {
+      c.classList.toggle('hidden-card', pos >= 3);
+      track.appendChild(c);
+    });
+    cpDots.forEach((d, n) => d.classList.toggle('active', n === start));
+  }
+  document.querySelectorAll('[data-cp]').forEach(b => b.addEventListener('click', () => { start = (start + Number(b.dataset.cp) + cards.length) % cards.length; renderCards(); }));
+  cpDots.forEach((d, n) => d.addEventListener('click', () => { start = n; renderCards(); }));
+  renderCards();
+
+  // Brand search
+  const search = document.getElementById('brandSearch');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    document.querySelectorAll('#brandGrid [data-brand]').forEach(el => { const ok = el.dataset.brand.includes(q); el.classList.toggle('d-none', !ok); if (ok) shown++; });
+    document.getElementById('brandMore').classList.toggle('d-none', q !== '');
+    document.getElementById('noBrands').classList.toggle('d-none', shown > 0);
+  });
+
+  // Video modal: load the iframe only when opened.
+  const modal = document.getElementById('videoModal');
+  modal.addEventListener('show.bs.modal', () => { const f = modal.querySelector('iframe[data-src]'); if (f) f.src = f.dataset.src; });
+  modal.addEventListener('hidden.bs.modal', () => { const f = modal.querySelector('iframe[data-src]'); if (f) f.src = ''; });
+})();
+</script>
+{% endblock %}

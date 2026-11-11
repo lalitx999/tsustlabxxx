@@ -1,0 +1,152 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="mx-auto d-grid gap-4 text-n900" style="max-width:80rem">
+  <header class="d-flex flex-wrap align-items-center justify-content-between gap-3 no-print">
+    <div><h1 class="text-2xl fw-semibold mb-0">Walk-in / New Sale</h1><p class="mt-1 text-sm text-n500 mb-0">สร้างงานตรวจสำหรับลูกค้าที่เข้ามาหน้าร้าน</p></div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'backoffice:operations' %}" class="bo-btn">{% icon 'truck' 'i-4' %} การส่งคืน &amp; ยกเลิกรายการ</a>
+      <button type="button" class="bo-btn" id="historyBtn">{% icon 'clock' 'i-4' %} ประวัติการขายล่าสุด</button>
+      <button type="button" class="bo-btn dark" id="newBtn">{% icon 'plus' 'i-4' %} งานใหม่</button>
+    </div>
+  </header>
+  <div class="r-lg p-3 text-sm" role="alert" style="border:1px solid #fecaca;background:#fef2f2;color:#991b1b" id="wkError" hidden></div>
+  <div class="r-lg p-3 text-sm" role="status" style="background:#ecfdf5;color:#065f46" id="wkNotice" hidden></div>
+
+  <section class="r-xl border border-n200 bg-white p-4 p-sm-5" id="historyBox" hidden>
+    <div class="mb-4 d-flex align-items-center justify-content-between gap-3"><h2 class="text-base fw-semibold mb-0">ประวัติการขายล่าสุด</h2><button type="button" class="bo-btn" id="historyClose">กลับรายการปัจจุบัน</button></div>
+    <div class="d-grid gap-2" id="historyList"></div>
+  </section>
+
+  <form id="walkinForm" class="row g-4 align-items-start" novalidate>
+    <div class="col-12 col-lg-7 d-grid gap-4">
+      <section class="r-xl border border-n200 bg-white p-4 p-sm-5 d-grid gap-3">
+        <div class="d-flex align-items-center justify-content-between gap-3"><h2 class="text-base fw-semibold mb-0">1. ข้อมูลลูกค้า</h2><span class="text-xs" id="customerInfo"></span></div>
+        <div class="row g-3">
+          <div class="col-12 col-md-6"><label class="text-sm w-100">เบอร์โทรศัพท์ *<div class="d-flex gap-2"><input name="phone" class="bo-in" required inputmode="tel" maxlength="20"><button type="button" class="bo-btn mt-1" id="lookupBtn">{% icon 'search' 'i-4' %}</button></div></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">ชื่อ-นามสกุล *<input name="customer_name" class="bo-in" required maxlength="255"></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">อีเมล<input name="email" type="email" class="bo-in"></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">LINE ID<input name="line_id" class="bo-in" maxlength="100"></label></div>
+        </div>
+      </section>
+      <section class="r-xl border border-n200 bg-white p-4 p-sm-5 d-grid gap-3">
+        <h2 class="text-base fw-semibold mb-0">2. ข้อมูลสินค้า</h2>
+        <div class="row g-3">
+          <div class="col-12 col-md-4"><label class="text-sm w-100">ประเภท *<select name="category" class="bo-in">{% for code, label in categories %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label></div>
+          <div class="col-12 col-md-4"><label class="text-sm w-100">แบรนด์ *<input name="brand" class="bo-in" list="brandOptions" required maxlength="100"><datalist id="brandOptions">{% for b in brands %}<option value="{{ b }}">{% endfor %}</datalist></label></div>
+          <div class="col-12 col-md-4"><label class="text-sm w-100">รุ่น *<input name="model" class="bo-in" required maxlength="100"></label></div>
+          <div class="col-6 col-md-4"><label class="text-sm w-100">สี<input name="color" class="bo-in" maxlength="50"></label></div>
+          <div class="col-6 col-md-4"><label class="text-sm w-100">วัสดุ<input name="material" class="bo-in" maxlength="100"></label></div>
+          <div class="col-12 col-md-4"><label class="text-sm w-100">Serial No. / Date Code<input name="serial_number" class="bo-in" maxlength="100"></label></div>
+          <div class="col-12 col-md-4"><label class="text-sm w-100">Tag code<input name="tag_code" class="bo-in" maxlength="100"></label></div>
+          <div class="col-12 col-md-8"><label class="text-sm w-100">อุปกรณ์ที่ได้รับ<input name="accessories" class="bo-in" placeholder="กล่อง, ถุงผ้า, การ์ด, ใบเสร็จ"></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">หมายเหตุ<textarea name="note" rows="2" class="bo-in"></textarea></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">คำแนะนำถึงผู้เชี่ยวชาญ<textarea name="expert_instruction" rows="2" class="bo-in"></textarea></label></div>
+        </div>
+      </section>
+      <section class="r-xl border border-n200 bg-white p-4 p-sm-5 d-grid gap-3">
+        <h2 class="text-base fw-semibold mb-0">3. บริการและการรับคืน</h2>
+        <div class="row g-3">
+          <div class="col-12 col-md-6"><label class="text-sm w-100">บริการ<select name="service_package" class="bo-in">{% for p in packages %}<option value="{{ p.code }}" {% if p.code == 'cert_15d' %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">การรับสินค้าคืน<select name="delivery_method" class="bo-in"><option value="self_pickup">รับด้วยตนเองที่สาขา</option><option value="shipping">จัดส่งสินค้าคืน</option></select></label></div>
+        </div>
+        <div class="row g-3" id="addressBox" hidden>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">ชื่อผู้รับ<input name="return_address_name" class="bo-in"></label></div>
+          <div class="col-12 col-md-6"><label class="text-sm w-100">เบอร์ผู้รับ<input name="return_phone" class="bo-in"></label></div>
+          <div class="col-12"><label class="text-sm w-100">ที่อยู่<input name="return_address_detail" class="bo-in"></label></div>
+          <div class="col-6 col-md-3"><label class="text-sm w-100">ตำบล / แขวง<input name="return_subdistrict" class="bo-in"></label></div>
+          <div class="col-6 col-md-3"><label class="text-sm w-100">อำเภอ / เขต<input name="return_district" class="bo-in"></label></div>
+          <div class="col-6 col-md-3"><label class="text-sm w-100">จังหวัด<input name="return_province" class="bo-in"></label></div>
+          <div class="col-6 col-md-3"><label class="text-sm w-100">รหัสไปรษณีย์<input name="return_postal_code" class="bo-in" maxlength="5"></label></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-12 col-lg-5 d-grid gap-4 position-sticky" style="top:1rem">
+      <section class="r-xl border border-n200 bg-white p-4 p-sm-5 d-grid gap-3">
+        <h2 class="text-base fw-semibold mb-0">4. การชำระเงิน</h2>
+        <div id="quoteBox" class="text-sm text-n500">กรอกแบรนด์เพื่อคำนวณราคา</div>
+        <div class="row g-2">
+          <div class="col-6"><label class="text-sm w-100">ราคาพิเศษ (ถ้ามี)<input name="manual_service_amount" type="number" min="0" step="0.01" class="bo-in"></label></div>
+          <div class="col-6"><label class="text-sm w-100">เหตุผล / อ้างอิง<input name="price_reason" class="bo-in"></label></div>
+          <div class="col-12"><label class="text-sm w-100">โค้ดส่วนลด<input name="promo_code" class="bo-in text-uppercase"></label></div>
+        </div>
+        <label class="d-flex align-items-center gap-2 text-sm"><input type="checkbox" name="mark_paid" id="markPaid"> รับชำระเงินแล้ว</label>
+        <div class="row g-2" id="payFields" hidden>
+          <div class="col-6"><select name="counter_method" class="bo-in"><option value="cash">เงินสด</option><option value="credit_card">บัตรเครดิต (EDC)</option><option value="transfer">โอนเงิน</option><option value="promptpay">PromptPay</option></select></div>
+          <div class="col-6"><input name="reference" class="bo-in" placeholder="เลขอ้างอิง / ใบเสร็จ"></div>
+        </div>
+      </section>
+      <section class="r-xl border border-n200 bg-white p-4 p-sm-5">
+        <h2 class="text-base fw-semibold mb-3">5. ยืนยันการสร้างงาน</h2>
+        <p class="mb-3 text-sm text-n500">ตรวจสอบรายการและยอดชำระ ระบบจะสร้างงานพร้อมเลขคิวทันที</p>
+        <button type="submit" class="bo-btn dark w-100 justify-content-center py-3" id="submitBtn">{% icon 'check' 'i-4' %} <span id="submitLabel">สร้างงาน / รอชำระเงิน</span></button>
+        <div id="resultBox" class="mt-3"></div>
+      </section>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  const form = document.getElementById('walkinForm'), quoteBox = document.getElementById('quoteBox');
+  let key = TL.uuid(), timer;
+  const data = () => Object.assign(TL.formData(form), { request_key: key });
+  const show = (id, msg) => { const el = document.getElementById(id); el.hidden = !msg; el.textContent = msg || ''; };
+  const line = (l, v, strong) => '<div class="d-flex justify-content-between' + (strong ? ' fw-bold text-base text-n900 border-top pt-2 mt-1' : '') + '"><span>' + l + '</span><span>' + v + '</span></div>';
+  async function quote() {
+    const d = data(); if (!d.brand) return;
+    try {
+      const q = (await TL.api('{% url "backoffice:walkin_quote" %}', { method: 'POST', body: d })).data;
+      quoteBox.innerHTML = '<div class="d-grid gap-1">' + line('ค่าบริการก่อนส่วนลด', TL.baht(q.service_amount_before_discount)) +
+        line('ส่วนลดสมาชิก ' + TL.esc(q.member_tier) + ' (' + Number(q.member_discount_percent) + '%)', '-' + TL.baht(Number(q.member_discount_amount))) +
+        (Number(q.promo_discount_amount) > 0 ? line('โค้ด ' + TL.esc(q.promo_code), '-' + TL.baht(q.promo_discount_amount)) : '') +
+        line('ค่าจัดส่งคืน', TL.baht(q.shipping_fee)) + line('VAT 7% ' + (q.prices_include_vat ? '(รวมแล้ว)' : ''), TL.baht(q.vat_amount)) +
+        line('ยอดชำระสุทธิ', TL.baht(q.total) + ' บาท', true) + '</div>';
+    } catch (err) { quoteBox.innerHTML = '<span style="color:#b91c1c">' + TL.esc(err.message) + '</span>'; }
+  }
+  form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(quote, 400); });
+  form.delivery_method.addEventListener('change', () => { document.getElementById('addressBox').hidden = form.delivery_method.value !== 'shipping'; });
+  document.getElementById('markPaid').addEventListener('change', e => {
+    document.getElementById('payFields').hidden = !e.target.checked;
+    document.getElementById('submitLabel').textContent = e.target.checked ? 'สร้างงานและรับชำระเงิน' : 'สร้างงาน / รอชำระเงิน';
+  });
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const info = document.getElementById('customerInfo');
+    try {
+      const c = (await TL.api('{% url "backoffice:walkin_customer" %}?phone=' + encodeURIComponent(form.phone.value))).data;
+      if (!c) { info.innerHTML = '<span class="text-n500">ลูกค้าใหม่</span>'; return; }
+      form.customer_name.value = c.full_name; form.email.value = c.email; form.line_id.value = c.line_id;
+      info.innerHTML = '<span class="d-inline-flex align-items-center rounded px-2 py-1 text-xs fw-bold text-white text-uppercase ls-wider" style="background:var(--n900)">' + TL.esc(c.membership_level) + '</span> เครดิต ' + TL.baht(c.credit_balance);
+      quote();
+    } catch (err) { TL.toast(err.message, 'error'); }
+  });
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); show('wkError', ''); show('wkNotice', '');
+    const btn = document.getElementById('submitBtn'); TL.busy(btn, true);
+    try {
+      const res = await TL.api('{% url "backoffice:walkin_create" %}', { method: 'POST', body: data() });
+      const b = res.data;
+      show('wkNotice', res.message + ' • ' + b.display_id + ' • คิว ' + b.job_display_id);
+      document.getElementById('resultBox').innerHTML = '<div class="r-lg p-3 text-sm" style="background:#ecfdf5;color:#065f46"><div class="fw-bold">' + TL.esc(b.display_id) + ' • ' + TL.esc(b.job_display_id) + '</div>ยอด ' + TL.baht(b.total) + ' บาท • ' + TL.esc(b.payment_status_label) + '</div>';
+      form.reset(); key = TL.uuid(); quoteBox.textContent = 'กรอกแบรนด์เพื่อคำนวณราคา'; document.getElementById('payFields').hidden = true;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) { show('wkError', err.message); }
+    TL.busy(btn, false);
+  });
+  document.getElementById('newBtn').addEventListener('click', () => { form.reset(); key = TL.uuid(); quoteBox.textContent = 'กรอกแบรนด์เพื่อคำนวณราคา'; document.getElementById('resultBox').innerHTML = ''; document.getElementById('historyBox').hidden = true; form.hidden = false; });
+  document.getElementById('historyBtn').addEventListener('click', async () => {
+    try {
+      const rows = (await TL.api(BO + 'bookings/rows/')).data.filter(r => r.channel === 'walk_in').slice(0, 30);
+      document.getElementById('historyList').innerHTML = rows.map(r => '<a href="{% url "backoffice:bookings" %}?q=' + encodeURIComponent(r.display_id) + '" class="d-flex flex-wrap justify-content-between gap-3 r-lg border p-3 text-start text-decoration-none text-n900">' +
+        '<span><b>' + TL.esc(r.job_display_id || r.display_id) + '</b><span class="mt-1 d-block text-sm">' + TL.esc(r.customer_name) + ' · ' + TL.esc(r.brand_name) + ' ' + TL.esc(r.model) + '</span></span>' +
+        '<span class="text-end text-sm">' + TL.baht(r.total) + ' บาท<span class="d-block text-n500">' + TL.esc(r.payment_status_label) + '</span></span></a>').join('') || '<p class="text-sm text-n500 mb-0">ยังไม่มีรายการ</p>';
+      document.getElementById('historyBox').hidden = false; form.hidden = true;
+    } catch (err) { TL.toast(err.message, 'error'); }
+  });
+  document.getElementById('historyClose').addEventListener('click', () => { document.getElementById('historyBox').hidden = true; form.hidden = false; });
+})();
+</script>
+{% endblock %}

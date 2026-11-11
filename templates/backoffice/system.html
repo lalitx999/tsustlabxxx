@@ -1,0 +1,19 @@
+{% extends 'backoffice/layout.html' %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='System Settings' subtitle='ข้อมูลการกำหนดค่าเซิร์ฟเวอร์ระบบความปลอดภัยและการเชื่อมต่อ' %}
+  <div class="bo-panel p-4 d-grid gap-3">
+    <h3 class="bo-panel-h muted">ความปลอดภัยและเครือข่าย</h3>
+    <div class="d-grid text-xs">
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">การยืนยันตัวตนพนักงาน (Session + CSRF)</span><span class="pill p-emerald">เปิดใช้งาน (Active)</span></div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">พิกัดหลังบ้าน (Cloaked Slug)</span><code class="bg-n50 px-2 py-1 border rounded font-monospace fs-10px">{% url 'backoffice:home' %}</code></div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">ที่อยู่เว็บไซต์ (SITE_URL)</span><code class="bg-n50 px-2 py-1 border rounded font-monospace fs-10px">{{ site_url }}</code></div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">โหมดดีบัก (DEBUG)</span>{% if debug %}<span class="pill p-amber">เปิด (เครื่องพัฒนา)</span>{% else %}<span class="pill p-emerald">ปิด (Production)</span>{% endif %}</div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">งานเบื้องหลัง (Celery)</span>{% if celery_eager %}<span class="pill p-amber">รันทันที (ไม่มี worker)</span>{% else %}<span class="pill p-emerald">Worker + Redis</span>{% endif %}</div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">อีเมล (SMTP)</span>{% if email_ready %}<span class="pill p-emerald">ตั้งค่าแล้ว</span>{% else %}<span class="pill p-neutral">ยังไม่ตั้งค่า</span>{% endif %}</div>
+      <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-n100"><span class="text-n600 fw-normal">LINE Messaging API</span>{% if line_ready %}<span class="pill p-emerald">ตั้งค่าแล้ว</span>{% else %}<span class="pill p-neutral">ยังไม่ตั้งค่า</span>{% endif %}</div>
+      <div class="d-flex justify-content-between align-items-center py-2"><span class="text-n600 fw-normal">บัญชีรับเงิน PromptPay</span>{% if promptpay_ready %}<span class="pill p-emerald">ตั้งค่าแล้ว</span>{% else %}<span class="pill p-neutral">ยังไม่ตั้งค่า</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

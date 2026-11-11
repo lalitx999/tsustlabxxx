@@ -1,0 +1,79 @@
+{% load ui %}
+{# PDPA cookie banner (same content and behaviour as the old CookieConsent component). #}
+<div class="cookie-wrap" id="cookieConsent" role="region" aria-label="การแจ้งเตือนคุกกี้" hidden>
+  <div class="cookie-box">
+    <div class="d-flex align-items-start gap-3">
+      <div class="cookie-ico d-none d-sm-flex">{% icon 'cookie' 'i-6' %}</div>
+      <div class="flex-grow-1">
+        <h3 class="text-base fw-semibold text-white ls-wide d-flex align-items-center flex-wrap gap-2 mb-2">
+          <span>นโยบายความเป็นส่วนตัวและการใช้คุกกี้</span><span class="pdpa-tag">PDPA</span>
+        </h3>
+        <p class="text-xs text-n300 lh-relaxed fw-light mb-0">
+          เว็บไซต์ <strong class="fw-medium" style="color:var(--amber300)">TRUST LAB</strong> มีการใช้งานคุกกี้ (Cookies) เพื่อมอบประสบการณ์การใช้งานที่ดีที่สุด เพิ่มประสิทธิภาพความปลอดภัย และพัฒนาการให้บริการตรวจวิเคราะห์สินค้าแบรนด์เนมให้ตอบโจทย์คุณมากยิ่งขึ้น
+          <a href="{% url 'website:privacy' %}" class="text-amber4">อ่านนโยบายความเป็นส่วนตัว</a>
+        </p>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-top d-grid gap-3" style="border-color:var(--n800)!important" id="cookiePrefs" hidden>
+      <div class="cookie-pref">
+        <div class="pe-3"><div class="text-sm fw-medium text-white d-flex align-items-center gap-2">คุกกี้ที่จำเป็นต่อการใช้งาน (Strictly Necessary) {% icon 'lock' 'text-n400' %}</div>
+          <p class="text-xs text-n400 lh-snug mb-0">จำเป็นสำหรับการทำงานพื้นฐานของระบบ เช่น การรักษาความปลอดภัยและการจองคิว (ไม่สามารถปิดได้)</p></div>
+        <span class="cookie-always">เปิดใช้งานเสมอ</span>
+      </div>
+      <div class="cookie-pref">
+        <div class="pe-3"><div class="text-sm fw-medium text-white">คุกกี้เพื่อการวิเคราะห์และประสิทธิภาพ (Analytics)</div>
+          <p class="text-xs text-n400 lh-snug mb-0">ช่วยให้เราเข้าใจพฤติกรรมการเข้าชมเว็บไซต์ เพื่อปรับปรุงระบบและคุณภาพการบริการให้ดียิ่งขึ้น</p></div>
+        <button type="button" class="tgl" role="switch" aria-checked="true" data-pref="analytics" aria-label="Analytics"><span></span></button>
+      </div>
+      <div class="cookie-pref">
+        <div class="pe-3"><div class="text-sm fw-medium text-white">คุกกี้เพื่อการตลาด (Marketing &amp; Social Media)</div>
+          <p class="text-xs text-n400 lh-snug mb-0">ใช้เพื่อนำเสนอโปรโมชันและสิทธิประโยชน์สมาชิกที่เหมาะสมกับความสนใจของคุณ</p></div>
+        <button type="button" class="tgl" role="switch" aria-checked="false" data-pref="marketing" aria-label="Marketing"><span></span></button>
+      </div>
+    </div>
+    <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-3" style="border-color:rgba(38,38,38,.8)!important">
+      <button type="button" class="ck-btn settings" data-ck="toggle">{% icon 'settings' %} <span data-ck-label>ตั้งค่าความเป็นส่วนตัว</span> <span data-ck-chev>{% icon 'chevron-down' %}</span></button>
+      <div class="d-flex flex-wrap flex-sm-nowrap align-items-center gap-2">
+        <button type="button" class="ck-btn flex-grow-1 flex-sm-grow-0" data-ck="necessary">ปฏิเสธคุกกี้ที่ไม่จำเป็น</button>
+        <button type="button" class="ck-btn flex-grow-1 flex-sm-grow-0" data-ck="save" hidden>{% icon 'check' %} บันทึกการตั้งค่า</button>
+        <button type="button" class="ck-btn accept flex-grow-1 flex-sm-grow-0" data-ck="all">{% icon 'shield-check' %} ยอมรับทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const KEY = 'trustlab_cookie_consent';
+  const box = document.getElementById('cookieConsent');
+  let stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) { stored = null; }
+  if (stored) return;
+  setTimeout(() => { box.hidden = false; }, 800);
+  const prefs = { necessary: true, analytics: true, marketing: false };
+  const save = p => {
+    try { localStorage.setItem(KEY, JSON.stringify({ preferences: p, consentedAt: new Date().toISOString(), version: '1.0' })); } catch (e) {}
+    box.hidden = true;
+  };
+  box.querySelectorAll('[data-pref]').forEach(btn => btn.addEventListener('click', () => {
+    prefs[btn.dataset.pref] = !prefs[btn.dataset.pref];
+    btn.setAttribute('aria-checked', prefs[btn.dataset.pref]);
+  }));
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-ck]');
+    if (!b) return;
+    const act = b.dataset.ck;
+    if (act === 'all') save({ necessary: true, analytics: true, marketing: true });
+    if (act === 'necessary') save({ necessary: true, analytics: false, marketing: false });
+    if (act === 'save') save(prefs);
+    if (act === 'toggle') {
+      const panel = document.getElementById('cookiePrefs');
+      const open = panel.hidden;
+      panel.hidden = !open;
+      box.querySelector('[data-ck=necessary]').hidden = open;
+      box.querySelector('[data-ck=save]').hidden = !open;
+      box.querySelector('[data-ck-label]').textContent = open ? 'ซ่อนการตั้งค่า' : 'ตั้งค่าความเป็นส่วนตัว';
+      box.querySelector('[data-ck-chev]').innerHTML = TL.icon(open ? 'chevron-up' : 'chevron-down');
+    }
+  });
+})();
+</script>

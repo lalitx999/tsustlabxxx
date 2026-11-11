@@ -1,0 +1,62 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}Contact | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with eyebrow='GET IN TOUCH' title='CONTACT US' subtitle='ติดต่อสอบถามเกี่ยวกับการส่งตรวจแบรนด์เนม การเช็คสถานะใบเซอร์ หรือขอเข้าพบคณะผู้เชี่ยวชาญเพื่อขอคำปรึกษาปัญหาแบรนด์เนมของคุณ' %}
+
+<section class="py-section bg-white">
+  <div class="container-custom">
+    <div class="row g-5 gx-lg-5 align-items-start">
+      <div class="col-12 col-lg-5 d-grid gap-5 pe-lg-4">
+        <div class="section-head d-grid gap-3">
+          <h2 class="mb-0">OUR OFFICES</h2>
+          <p class="mb-0">คุณสามารถเดินทางเข้ามาใช้บริการ ตรวจสอบ และจองสล็อตล่วงหน้า หรือจัดส่งทางพัสดุมาตามที่อยู่นี้</p>
+        </div>
+        <div class="d-grid gap-4">
+          {% for icon_name, label, title, detail in info %}
+          <div class="info-line">{% icon icon_name 'i-5 sw-15' %}
+            <div class="d-grid gap-1"><span class="fs-9px fw-bold text-n400 ls-wider text-uppercase">{{ label }}</span><h3 class="text-sm fw-semibold text-n900 mb-0">{{ title }}</h3><p class="text-xs md-text-sm text-n500 lh-relaxed fw-light mb-0">{{ detail }}</p></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-12 col-lg-7">
+        <div class="bg-n50 border border-n100 r-3xl p-4 p-md-5 d-grid gap-4">
+          <div class="d-grid gap-1"><h3 class="text-lg fw-bold text-n900 text-uppercase mb-0">SEND US A MESSAGE</h3><p class="text-xs text-n500 fw-light mb-0">ส่งคำถามหรือข้อกังวลใจเกี่ยวกับบริการของคุณ เจ้าหน้าที่ยินดีให้คำปรึกษาอย่างสุภาพ</p></div>
+          <form id="contactForm" class="d-grid gap-3">
+            <div class="row g-3">
+              <div class="col-12 col-sm-6"><label class="f-label">ชื่อ-นามสกุลของคุณ</label><input name="name" class="f-input" required maxlength="255" placeholder="เช่น สมชาย ใจดี"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">อีเมลติดต่อ</label><input name="email" type="email" class="f-input" required placeholder="เช่น email@example.com"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">เบอร์โทรศัพท์</label><input name="phone" type="tel" class="f-input" required maxlength="50" placeholder="เช่น 0891234567"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">หัวข้อข้อความ</label><input name="subject" class="f-input" required maxlength="200" placeholder="เช่น สอบถามค่าส่งตรวจนาฬิกา"></div>
+            </div>
+            <div><label class="f-label">ข้อความ / คำอธิบาย</label><textarea name="message" rows="5" class="f-input" required maxlength="5000" placeholder="พิมพ์รายละเอียดข้อซักถามที่คุณต้องการส่งติดต่อทีมงานที่นี่..."></textarea></div>
+            <div class="form-ok d-none" id="contactOk">{% icon 'hi-check' %} ข้อความได้รับการส่งเรียบร้อยแล้ว! เจ้าหน้าที่จะติดต่อกลับหาคุณภายใน 24 ชั่วโมง</div>
+            <button type="submit" class="btn-submit">ส่งข้อความติดต่อ</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="map-box">
+  <iframe src="https://www.google.com/maps?q=Siam+Square+One+Bangkok&amp;output=embed" loading="lazy" title="Trust Lab Thailand Google Map Location" allowfullscreen></iframe>
+</section>
+{% endblock %}
+{% block page_scripts %}
+<script>
+document.getElementById('contactForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'กำลังส่งข้อมูล...';
+  try {
+    const data = TL.formData(this);
+    await TL.api('{% url "website:contact_submit" %}', { method: 'POST', body: data });
+    document.getElementById('contactOk').classList.remove('d-none');
+    this.reset();
+  } catch (err) { TL.toast(err.message, 'error'); }
+  btn.disabled = false; btn.textContent = 'ส่งข้อความติดต่อ';
+});
+</script>
+{% endblock %}

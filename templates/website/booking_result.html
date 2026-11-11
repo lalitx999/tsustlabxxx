@@ -1,0 +1,26 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}Booking Result | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container container-tl" style="max-width:40rem">
+    {% if receipt %}
+    <div class="card-tl p-5 text-center">
+      {% icon 'circle-check' 'tl-icon-xl mb-3' %}
+      <h1 class="h4 fw-bold">จองคิวเรียบร้อยแล้ว</h1>
+      <p class="text-muted">กรุณาบันทึกหน้านี้ไว้เพื่อติดตามสถานะ</p>
+      <div class="text-start border rounded-4 p-4 mt-4 d-grid gap-2 small">
+        <div class="summary-row"><span>รหัสการจอง</span><strong>{{ receipt.booking_id }}</strong></div>
+        <div class="summary-row"><span>วันนัดหมาย</span><span>{{ receipt.booking_date }} {{ receipt.booking_time }}</span></div>
+        <div class="summary-row"><span>สถานะชำระเงิน</span><span class="badge-status st-{{ receipt.payment_status }}">{{ receipt.payment_status_label }}</span></div>
+        <div class="summary-row"><span>ยอดรวม</span><strong>{{ receipt.total|baht }} บาท</strong></div>
+        {% if receipt.result %}<div class="summary-row"><span>ผลตรวจ</span><span class="badge-status st-{{ receipt.result }}">{{ receipt.result|upper }}</span></div>{% endif %}
+      </div>
+      <a href="{% url 'website:home' %}" class="btn btn-dark btn-pill mt-4">{% icon 'house' %} กลับหน้าแรก</a>
+    </div>
+    {% else %}
+    <div class="card-tl p-5 text-center">{% icon 'circle-alert' 'tl-icon-xl mb-3' %}<p class="fw-semibold">{{ error }}</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'backoffice/layout.html' %}
+{% block content %}
+<div class="d-grid gap-4">
+  {% include 'backoffice/_head.html' with heading='Completed Jobs' subtitle='ใบสั่งงานที่ตรวจวิเคราะห์เสร็จสิ้นและสรุปผลแล้ว' %}
+  {% if not jobs %}<div class="bo-empty fw-bold">ยังไม่มีงานที่ตรวจเสร็จสิ้น</div>{% else %}
+  <div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table">
+    <thead><tr><th>Job ID</th><th>ลูกค้า</th><th>ยี่ห้อ / รุ่น</th><th>หมายเลขคิว</th><th>ผู้ตรวจ</th><th>ใบรับรอง</th><th>ผลการตรวจ</th></tr></thead>
+    <tbody>{% for job in jobs %}
+      <tr><td class="fw-black" style="color:var(--n950)">{{ job.display_id }}</td><td>{{ job.customer.full_name }}</td>
+        <td><span class="fw-black" style="color:var(--n950)">{{ job.brand }}</span>{% if job.model %} - {{ job.model }}{% endif %}</td>
+        <td class="fw-black" style="color:#D4AF37">{{ job.queue_no }}</td><td class="text-n700 fw-medium">{{ job.expert_source|default:'—' }}</td>
+        <td class="font-monospace">{% if job.certificate %}<a href="{% url 'backoffice:certificates' %}?q={{ job.certificate.cert_code|urlencode }}">{{ job.certificate.cert_code }}</a>{% else %}-{% endif %}</td>
+        <td>{% if job.result == 'authentic' %}<span class="pill p-emerald">AUTHENTIC</span>{% elif job.result == 'fake' %}<span class="pill p-red">NOT AUTHENTICATED</span>{% else %}<span class="pill p-amber">UNABLE TO AUTHENTICATE</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div></div>
+  {% endif %}
+</div>
+{% endblock %}

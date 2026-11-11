@@ -1,0 +1,133 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head">
+    <div><h1 class="bo-h1">Job Registry</h1><p class="bo-sub fw-light">รายการและประวัติใบสั่งงานตรวจแบรนด์เนมทั้งหมดในระบบ</p></div>
+    <button type="button" class="bo-btn" id="reloadBtn">{% icon 'refresh-cw' %} ดึงข้อมูลล่าสุด</button>
+  </div>
+  {% include 'backoffice/_filters.html' with date_label='วันที่สร้างงาน' unit='งาน' %}
+  <div id="jobsBox"><div class="bo-empty">กำลังดึงข้อมูลใบงาน...</div></div>
+</div>
+
+<div class="modal fade bo-modal" id="jobModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:28rem">
+    <div class="modal-content"><div class="modal-body">
+      <div class="d-flex justify-content-between align-items-center pb-3 border-bottom border-n100">
+        <h3 class="text-sm fw-black text-n900 text-uppercase ls-wide d-flex align-items-center gap-2 mb-0">{% icon 'clipboard-check' 'i-4' %} <span>ตรวจสอบสินค้า</span></h3>
+        <button type="button" class="bo-modal-x" data-bs-dismiss="modal" aria-label="Close">{% icon 'x' 'i-4' %}</button>
+      </div>
+      <div class="bo-detail" id="jobDetail"></div>
+      <div class="d-grid gap-2 pt-2 border-top border-n100">
+        <div class="d-flex align-items-center justify-content-between"><label class="bo-lbl mb-0">รูปถ่ายสินค้าที่อัปโหลดไว้</label>
+          <label class="bo-btn-xs outline mb-0" role="button">{% icon 'camera' %} เพิ่มรูป<input type="file" accept="image/*" capture="environment" multiple hidden id="photoInput"></label></div>
+        <div class="row g-2" id="jobPhotos"></div>
+      </div>
+      <div class="d-grid gap-2">
+        <label class="bo-lbl mb-0">ขั้นตอนปัจจุบัน</label>
+        <div class="row g-2"><div class="col-6"><button type="button" class="bo-choice" data-stage="pending">อยู่ในคิว</button></div><div class="col-6"><button type="button" class="bo-choice" data-stage="in_progress">อยู่ในขั้นตอนตรวจสอบ</button></div></div>
+        <button type="button" class="bo-btn justify-content-center text-uppercase fs-10px" id="saveStage">บันทึกขั้นตอน (ยังไม่ Final)</button>
+      </div>
+      <div class="d-grid gap-2 pt-2 border-top border-n100">
+        <label class="bo-lbl mb-0">ผลการตรวจสอบ (Final)</label>
+        <div class="row g-2">
+          <div class="col-4"><button type="button" class="bo-res r-ok" data-result="authentic">{% icon 'shield-check' 'i-4' %}<span>AUTHENTIC – ผ่านเกณฑ์</span></button></div>
+          <div class="col-4"><button type="button" class="bo-res r-fake" data-result="fake">{% icon 'circle-x' 'i-4' %}<span>NOT AUTHENTICATED – ไม่ผ่านเกณฑ์การรับรองความแท้</span></button></div>
+          <div class="col-4"><button type="button" class="bo-res r-inc" data-result="inconclusive">{% icon 'circle-alert' 'i-4' %}<span>UNABLE TO AUTHENTICATE – ข้อมูลหรือผลตรวจไม่เพียงพอที่จะสรุป</span></button></div>
+        </div>
+      </div>
+      <div class="d-grid gap-2 pt-2 border-top border-n100">
+        <label class="bo-lbl mb-0 d-flex align-items-center gap-1">{% icon 'user-check' %} ผู้เชี่ยวชาญผู้ตรวจสอบ</label>
+        <select class="bo-field" id="expertSel"><option value="">-- เลือกผู้เชี่ยวชาญ --</option>{% for e in experts %}<option value="{{ e.id }}">{% if e.full_name %}{{ e.full_name }} ({{ e.username }}){% else %}{{ e.username }}{% endif %}</option>{% endfor %}</select>
+        <input class="bo-field" id="certCode" placeholder="เลขใบเซอร์ (ไม่ระบุ = สร้างอัตโนมัติ)" maxlength="50">
+      </div>
+      <div class="d-flex gap-2 pt-2 user-select-none">
+        <button type="button" class="bo-btn flex-fill justify-content-center py-2" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="bo-btn dark flex-fill justify-content-center py-2" id="approveBtn">{% icon 'shield-check' %} <span>Approve</span></button>
+      </div>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  const box = document.getElementById('jobsBox');
+  const modal = new bootstrap.Modal(document.getElementById('jobModal'));
+  let rows = [], job = null, stage = 'pending', result = '';
+  const RES = { authentic: ['p-emerald', 'AUTHENTIC'], fake: ['p-red', 'NOT AUTHENTICATED'], inconclusive: ['p-amber', 'UNABLE TO AUTHENTICATE'] };
+  const statusPill = s => '<span class="pill ' + (s === 'completed' ? 'p-emerald' : s === 'in_progress' ? 'p-sky' : s === 'cancelled' ? 'p-neutral' : 'p-amber') + '">' + s + '</span>';
+
+  function render() {
+    const list = rows.filter(TLFilters.match);
+    TLFilters.count(list.length, rows.length);
+    if (!list.length) { box.innerHTML = '<div class="bo-empty">ไม่พบงานตามเงื่อนไขที่เลือก</div>'; return; }
+    box.innerHTML = '<div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table"><thead><tr><th>Job ID</th><th>ลูกค้า</th><th>ยี่ห้อ / รุ่น</th><th>คิวตรวจ</th><th>ผู้ตรวจ</th><th>ช่องทาง</th><th>สถานะ</th><th>ผลการตรวจ</th><th class="text-end">จัดการ</th></tr></thead><tbody>' +
+      list.map(j => '<tr><td class="fw-black" style="color:var(--n950)">' + TL.esc(j.display_id) + '</td><td>' + TL.esc(j.customer_name) + '</td>' +
+        '<td><span class="fw-black" style="color:var(--n950)">' + TL.esc(j.brand) + '</span>' + (j.model ? ' - ' + TL.esc(j.model) : '') + '</td>' +
+        '<td class="text-n500">' + TL.esc(j.queue_no || '-') + '</td><td class="text-n700 fw-medium">' + TL.esc(j.expert_source || '—') + '</td>' +
+        '<td>' + (j.source === 'walk_in' ? 'Walk-in' : 'Booking') + '</td><td>' + statusPill(j.status) + '</td>' +
+        '<td>' + (j.status === 'completed' && RES[j.result] ? '<span class="pill ' + RES[j.result][0] + '">' + RES[j.result][1] + '</span>' : '<span class="text-n400 fw-light fst-italic">อยู่ระหว่างตรวจ</span>') + '</td>' +
+        '<td class="text-end">' + (j.status === 'cancelled' ? '' : '<button class="bo-btn-xs" data-open="' + j.id + '">' + TL.icon('clipboard-check') + ' ' + (j.status === 'completed' ? 'ดู / แก้ไขผลตรวจ' : 'จัดการตรวจสอบ') + '</button>') + '</td></tr>').join('') +
+      '</tbody></table></div></div>';
+  }
+  async function load() {
+    box.innerHTML = '<div class="bo-empty">กำลังดึงข้อมูลใบงาน...</div>';
+    try { rows = (await TL.api(BO + 'jobs/rows/')).data; render(); }
+    catch (err) { box.innerHTML = '<div class="p-4 r-2xl text-xs" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c">เกิดข้อผิดพลาด: ' + TL.esc(err.message) + '</div>'; }
+  }
+  function paint() {
+    document.querySelectorAll('[data-stage]').forEach(b => b.classList.toggle('on', b.dataset.stage === stage));
+    document.querySelectorAll('[data-result]').forEach(b => b.classList.toggle('on', b.dataset.result === result));
+  }
+  function photos() {
+    const all = job.photos.customer.concat(job.photos.staff);
+    document.getElementById('jobPhotos').innerHTML = all.length ? all.map(p => '<div class="col-3"><div class="bo-photo"><a href="' + TL.esc(p.url) + '" target="_blank"><img src="' + TL.esc(p.url) + '" alt="product photo"></a><button type="button" class="del" data-del="' + p.id + '">' + TL.icon('x') + '</button></div></div>').join('')
+      : '<div class="col-12"><p class="fs-10px text-n400 fst-italic py-2 mb-0">ไม่มีรูปถ่ายสินค้าอัปโหลดในใบงานนี้</p></div>';
+  }
+  async function open(id) {
+    job = (await TL.api(BO + 'jobs/' + id + '/')).data;
+    stage = job.status === 'in_progress' ? 'in_progress' : 'pending'; result = job.result || '';
+    const row = (k, v, cls) => '<div><span class="k">' + k + '</span><span class="v ' + (cls || '') + '">' + TL.esc(v) + '</span></div>';
+    document.getElementById('jobDetail').innerHTML = '<p class="fs-9px text-n400 text-uppercase ls-wider mb-1">รายละเอียดใบงาน</p>' +
+      row('Job ID:', job.display_id) + row('ลูกค้า:', job.customer_name) + row('ยี่ห้อ / รุ่น:', job.brand + (job.model ? ' - ' + job.model : '')) +
+      row('คิวตรวจ:', job.queue_no || '-') + row('Serial:', job.serial_number || '-') +
+      '<div class="border-top border-n200 pt-2"><span class="k">ผู้ตรวจ:</span><span class="v" style="color:#065f46">' + TL.esc(job.expert_source || 'ยังไม่ได้ระบุผู้ตรวจ') + '</span></div>';
+    document.getElementById('certCode').value = job.certificate_code || '';
+    document.getElementById('expertSel').value = '';
+    photos(); paint(); modal.show();
+  }
+  async function save(body, btn) {
+    TL.busy(btn, true);
+    try { const res = await TL.api(BO + 'jobs/' + job.id + '/result/', { method: 'POST', body: body }); TL.toast(res.message); modal.hide(); load(); }
+    catch (err) { TL.toast(err.message, 'error'); }
+    TL.busy(btn, false);
+  }
+  document.querySelectorAll('[data-stage]').forEach(b => b.addEventListener('click', () => { stage = b.dataset.stage; paint(); }));
+  document.querySelectorAll('[data-result]').forEach(b => b.addEventListener('click', () => { result = b.dataset.result; paint(); }));
+  document.getElementById('saveStage').addEventListener('click', e => save({ status: stage, expert_id: document.getElementById('expertSel').value }, e.currentTarget));
+  document.getElementById('approveBtn').addEventListener('click', e => {
+    if (!result) { TL.toast('กรุณาเลือกผลการตรวจสอบ', 'warning'); return; }
+    save({ status: 'completed', result: result, expert_id: document.getElementById('expertSel').value, cert_code: document.getElementById('certCode').value }, e.currentTarget);
+  });
+  document.getElementById('photoInput').addEventListener('change', async e => {
+    const files = Array.from(e.target.files), list = [];
+    for (const f of files) { try { list.push(await TL.readImage(f)); } catch (x) { TL.toast(x.message, 'error'); } }
+    e.target.value = '';
+    if (!list.length || !job.booking_id) return;
+    try { const res = await TL.api(BO + 'bookings/' + job.booking_id + '/photos/', { method: 'POST', body: { photos: list } }); TL.toast(res.message); await open(job.id); }
+    catch (x) { TL.toast(x.message, 'error'); }
+  });
+  document.getElementById('jobPhotos').addEventListener('click', async e => {
+    const b = e.target.closest('[data-del]'); if (!b || !confirm('ลบรูปนี้?')) return;
+    try { await TL.api(BO + 'bookings/' + job.booking_id + '/photos/' + b.dataset.del + '/delete/', { method: 'POST' }); await open(job.id); }
+    catch (x) { TL.toast(x.message, 'error'); }
+  });
+  box.addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) open(b.dataset.open).catch(x => TL.toast(x.message, 'error')); });
+  document.getElementById('reloadBtn').addEventListener('click', load);
+  TLFilters.onChange(render);
+  load();
+})();
+</script>
+{% endblock %}

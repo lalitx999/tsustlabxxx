@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load ui %}
+{% block title %}Staff Login | TRUST LAB{% endblock %}
+{% block body %}
+<div class="min-vh-100 bg-black text-white d-flex align-items-center justify-content-center p-4 position-relative overflow-hidden user-select-none">
+  <div class="position-absolute rounded-circle" style="top:25%;left:25%;width:24rem;height:24rem;background:rgba(245,158,11,.1);filter:blur(120px);pointer-events:none"></div>
+  <div class="position-absolute rounded-circle" style="bottom:25%;right:25%;width:24rem;height:24rem;background:rgba(202,138,4,.05);filter:blur(150px);pointer-events:none"></div>
+  <div class="w-100 r-3xl p-4 p-md-5 d-grid gap-5 position-relative" style="max-width:28rem;background:var(--n950);border:1px solid var(--n900);box-shadow:0 25px 50px -12px rgba(0,0,0,.25);z-index:10">
+    <div class="text-center d-grid gap-2">
+      <div class="d-inline-block text-2xl fw-black ls-tight text-white text-uppercase">TRUST LAB <span class="text-xs px-2 py-1 rounded-pill fw-bold ms-1 ls-widest text-amber5" style="background:var(--n900);border:1px solid var(--n800)">THAILAND</span></div>
+      <p class="fs-10px text-n500 fw-light ls-widest text-uppercase mb-0">Professional Authentication Back-office</p>
+    </div>
+    <form method="post" class="d-grid gap-4">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% for m in messages %}<div class="text-xs px-3 py-2 r-xl fw-medium d-flex align-items-center gap-2" style="background:rgba(69,10,10,.4);border:1px solid #7f1d1d;color:#f87171">{% icon 'triangle-alert' %} {{ m.message }}</div>{% endfor %}
+      <div class="d-grid gap-1"><label class="fs-9px fw-bold text-n400 text-uppercase d-block ls-wider">ชื่อผู้ใช้ (Username)</label>
+        <input name="username" required autofocus autocomplete="username" placeholder="ป้อนชื่อผู้ใช้" class="w-100 r-xl px-3 text-xs text-white" style="height:3rem;background:rgba(23,23,23,.5);border:1px solid var(--n800);outline:none"></div>
+      <div class="d-grid gap-1"><label class="fs-9px fw-bold text-n400 text-uppercase d-block ls-wider">รหัสผ่าน (Password)</label>
+        <input name="password" type="password" required autocomplete="current-password" placeholder="••••••••" class="w-100 r-xl px-3 text-xs text-white" style="height:3rem;background:rgba(23,23,23,.5);border:1px solid var(--n800);outline:none"></div>
+      <button type="submit" class="w-100 bg-white text-black py-3 r-xl text-xs fw-bold text-uppercase ls-wider border-0" style="box-shadow:0 10px 15px -3px rgba(255,255,255,.05)">เข้าสู่ระบบหลังบ้าน</button>
+    </form>
+    <p class="text-center fs-9px text-n500 text-uppercase ls-widest mb-0">Authorized personnel only • TRUST LAB THAILAND</p>
+  </div>
+</div>
+{% endblock %}

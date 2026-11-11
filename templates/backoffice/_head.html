@@ -1,0 +1,9 @@
+{% load ui %}
+<div class="bo-head{% if bordered %} bordered{% endif %} mb-4">
+  <div>
+    {% if tag %}<div class="d-flex align-items-center gap-2 mb-1"><span class="bo-tag">{{ tag }}</span>{% if tag_note %}<span class="text-xs text-n400 font-monospace">{{ tag_note }}</span>{% endif %}</div>{% endif %}
+    <h1 class="bo-h1">{{ heading }}</h1>
+    {% if subtitle %}<p class="bo-sub{% if light %} light{% endif %}">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if refresh %}<button type="button" class="bo-btn align-self-start align-self-sm-auto" onclick="location.reload()">{% if refresh_icon %}{% icon 'refresh-cw' %}{% endif %}{{ refresh }}</button>{% endif %}
+</div>

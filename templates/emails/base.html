@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{% block title %}TRUST LAB{% endblock %}</title></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<div style="background:#f3f4f6;padding:24px 12px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;">
+    <div style="background:#111827;padding:32px 24px;text-align:center;">
+      <h1 style="color:#D4AF37;font-size:22px;font-weight:800;letter-spacing:3px;margin:0;">TRUST LAB THAILAND</h1>
+      <div style="color:#9CA3AF;font-size:9px;font-weight:700;letter-spacing:2px;margin-top:4px;">VERIFY · INSPECT · ASSURE</div>
+      <div style="color:#E5E7EB;font-size:14px;margin-top:12px;">{% block subtitle %}{% endblock %}</div>
+    </div>
+    <div style="padding:32px 28px;color:#1F2937;line-height:1.6;font-size:14px;">{% block body %}{% endblock %}</div>
+    <div style="background:#F9FAFB;border-top:1px solid #E5E7EB;padding:24px;text-align:center;color:#9CA3AF;font-size:11px;">
+      <strong style="color:#4B5563;">TRUST LAB THAILAND</strong><br>
+      สถาบันตรวจวิเคราะห์และออกใบรับรองความแท้สินค้าแบรนด์เนมมาตรฐานสากล<br>
+      Siam Square One ชั้น 1 กรุงเทพมหานคร · <a href="{{ site_url }}" style="color:#111827;">{{ site_url }}</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

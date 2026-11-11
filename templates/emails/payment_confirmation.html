@@ -1,0 +1,14 @@
+{% extends 'emails/base.html' %}
+{% block title %}ยืนยันการชำระเงิน - TRUST LAB{% endblock %}
+{% block subtitle %}ยืนยันการรับชำระเงิน (PAYMENT CONFIRMED){% endblock %}
+{% block body %}
+<p style="margin-top:0;">เรียน คุณ <strong>{{ booking.customer.full_name }}</strong>,</p>
+<p>สถาบัน TRUST LAB THAILAND ได้รับยอดชำระเงินสำหรับบริการตรวจสินค้าเรียบร้อยแล้ว</p>
+<table width="100%" cellpadding="8" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
+  <tr><td><small style="color:#6B7280;">รหัสการจอง</small><br><strong>{{ booking.display_id }}</strong></td>
+      <td><small style="color:#6B7280;">ยอดชำระทั้งสิ้น</small><br><strong style="color:#047857;">฿{{ total|floatformat:2 }}</strong></td></tr>
+  <tr><td><small style="color:#6B7280;">สินค้า</small><br><strong>{{ booking.brand_name }} {{ booking.model }}</strong></td>
+      <td><small style="color:#6B7280;">ช่องทางชำระ</small><br><strong>{{ pay_method }}</strong></td></tr>
+</table>
+<p style="font-size:13px;color:#4B5563;">สินค้าของท่านเข้าสู่กระบวนการตรวจโดยผู้เชี่ยวชาญ ท่านจะได้รับอีเมลแจ้งผลเมื่อการตรวจเสร็จสิ้น</p>
+{% endblock %}

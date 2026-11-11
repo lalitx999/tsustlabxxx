@@ -1,0 +1,46 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}Services | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with eyebrow='PROFESSIONAL SERVICES & PRICING' title='OUR SERVICES & CHARGES' subtitle='ตารางอัตราค่าบริการและฟังก์ชันการตรวจสอบสินค้าแบรนด์เนมประเภทต่างๆ โปร่งใส ตรวจสอบผลได้จริง และคุ้มครองความปลอดภัยให้ทุกธุรกรรมของคุณ' %}
+
+<section class="py-section bg-white">
+  <div class="container-custom">
+    <div class="section-head text-center mb-5 pb-4">
+      <h2 class="mb-3">SELECT A SERVICE PACKAGE</h2>
+      <p class="mx-auto mb-0">เลือกรูปแบบการส่งตรวจที่เหมาะสมกับจุดประสงค์การใช้สอยและระดับความจำเป็นของคุณ</p>
+    </div>
+    <div class="row g-5 g-lg-4 pt-3">
+      {% for pkg in packages %}
+      <div class="col-12 col-lg-4">
+        <div class="pkg-card{% if pkg.popular %} popular{% endif %}">
+          {% if pkg.popular %}<span class="pkg-badge">MOST POPULAR</span>{% endif %}
+          <div class="d-grid gap-4">
+            <div class="d-grid gap-2"><span class="kicker">{{ pkg.name }}</span><h3 class="text-lg fw-bold text-n900 lh-tight mb-0">{{ pkg.label }}</h3></div>
+            <div class="d-flex align-items-baseline gap-1 flex-wrap"><span class="pkg-price">{{ pkg.price }}</span><span class="text-xs text-n400 fw-light">/ {{ pkg.unit }}</span></div>
+            <p class="text-xs text-n500 lh-relaxed fw-light mb-0">{{ pkg.description }}</p>
+            <hr class="my-0" style="border-color:var(--n100);opacity:1">
+            <ul class="pkg-features">{% for feat in pkg.features %}<li>{% icon 'hi-check' 'sw-2' %}<span>{{ feat }}</span></li>{% endfor %}</ul>
+          </div>
+          <div class="pt-5"><a href="{% url pkg.url %}" class="pkg-cta">{{ pkg.cta }}</a></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="py-section bg-n50 border-top border-n100">
+  <div class="container-custom">
+    <div class="section-head text-center mb-5">
+      <h2 class="mb-2">ITEMS WE CAN AUTHENTICATE</h2>
+      <p class="mx-auto mb-0">ขอบเขตหมวดหมู่สินค้าแบรนด์เนมหรูที่สถาบันรองรับการทำงานในปัจจุบัน</p>
+    </div>
+    <div class="row g-3">
+      {% for name, text in categories %}
+      <div class="col-6 col-md-3"><div class="cat-card"><span class="text-xs fw-bold ls-wider text-n800 text-uppercase d-block">{{ name }}</span><p class="text-xs text-n400 fw-light lh-relaxed mb-0">{{ text }}</p></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

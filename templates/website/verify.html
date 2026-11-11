@@ -1,0 +1,135 @@
+{% extends 'website/layout.html' %}
+{% load static ui %}
+{% block title %}Certificate Verification | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with compact=True eyebrow='ONLINE CERTIFICATE VERIFICATION' title='CERTIFICATE VERIFICATION' subtitle='ระบบตรวจสอบผลใบรับรองความถูกต้องอย่างเป็นทางการจากฐานข้อมูลสถาบัน TRUST LAB' %}
+
+<section class="py-5 my-md-4 bg-white flex-grow-1">
+  <div class="container-custom">
+    <div class="w-100 d-grid gap-5">
+      <section class="max-w-xl mx-auto d-grid gap-4 px-3 w-100">
+        <div class="text-center d-grid gap-2">
+          <h2 class="text-xl md-text-2xl fw-bold text-uppercase ls-wider mb-0">ENTER CERTIFICATE ID</h2>
+          <p class="text-xs text-n500 fw-light mb-0">กรอกหมายเลขรหัสใบรับรอง (เช่น TL-XXXX-XXXX) หรือสแกน QR Code เพื่อเช็คสถานะผลตรวจความแท้</p>
+        </div>
+        <form id="verifyForm" class="d-flex gap-2">
+          <input type="text" name="id" required value="{{ initial_id }}" placeholder="เช่น TL-XXXX-XXXX" class="verify-input" maxlength="60" autocomplete="off">
+          <button type="submit" class="verify-btn" id="verifyBtn">ตรวจสอบ</button>
+        </form>
+      </section>
+      <div id="verifyResult"></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const LOOKUP = '{% url "website:verify_lookup" %}';
+  const FALLBACK_IMG = '{% static "img/logo-print.png" %}';
+  const form = document.getElementById('verifyForm');
+  const input = form.querySelector('[name=id]');
+  const btn = document.getElementById('verifyBtn');
+  const out = document.getElementById('verifyResult');
+  const esc = TL.esc;
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() : '-';
+  const TYPES = {
+    authentic: { cls: 'rb-ok', pill: 'ok', icon: 'hi-check', label: 'AUTHENTIC', title: 'AUTHENTIC — ประเมินจากภาพว่าเป็นของแท้',
+      desc: 'สินค้ารายการนี้ได้รับการตรวจสอบความแท้โดยผู้เชี่ยวชาญ TRUST LAB THAILAND และมีผลเป็นของแท้ตามมาตรฐาน 100+ Checkpoints' },
+    fake: { cls: 'rb-fake', pill: 'fake', icon: 'hi-x', label: 'NOT AUTHENTICATED', title: 'NOT AUTHENTICATED — ไม่ผ่านเกณฑ์การรับรองว่าเป็นของแท้',
+      desc: 'สินค้ารายการนี้ไม่ผ่านเกณฑ์การรับรองความแท้ตามมาตรฐานของแบรนด์และผลการวิเคราะห์ของ TRUST LAB THAILAND' },
+    inconclusive: { cls: 'rb-warn', pill: 'warn', icon: 'hi-search', label: 'UNABLE TO AUTHENTICATE', title: 'UNABLE TO AUTHENTICATE — ยังสรุปผลจากภาพที่ส่งมาไม่ได้',
+      desc: 'รายละเอียดหรือภาพถ่ายที่ได้รับยังไม่เพียงพอต่อการยืนยันผลความแท้ได้อย่างชัดเจนตามเกณฑ์มาตรฐาน' },
+    revoked: { cls: 'rb-fake', pill: 'fake', icon: 'hi-x', label: 'REVOKED', title: 'REVOKED — ใบรับรองนี้ถูกเพิกถอน',
+      desc: 'ใบรับรองฉบับนี้ถูกเพิกถอนโดย TRUST LAB THAILAND และไม่สามารถใช้อ้างอิงผลการตรวจสอบได้อีกต่อไป' }
+  };
+  function typeOf(d) {
+    if (d.status === 'revoked') return 'revoked';
+    if (d.result === 'fake' || d.status === 'unauthentic') return 'fake';
+    if (d.result === 'inconclusive') return 'inconclusive';
+    return 'authentic';
+  }
+  const row = (label, value, cls) => '<div><span class="text-n500 fw-light">' + label + '</span><span class="' + (cls || 'fw-semibold text-n900 text-uppercase') + ' text-end">' + value + '</span></div>';
+
+  function render(d) {
+    const t = TYPES[typeOf(d)];
+    const photos = d.photos.length ? d.photos : [FALLBACK_IMG];
+    out.innerHTML =
+      '<section class="max-w-4xl mx-auto d-grid gap-5 px-3">' +
+        '<div class="result-banner ' + t.cls + '"><div class="dot">' + TL.icon(t.icon, 'i-8 sw-25') + '</div>' +
+          '<div><h2>' + t.title + '</h2><p class="text-xs md-text-sm fw-light lh-relaxed mb-0">' + esc(d.revoke_reason || t.desc) + '</p></div></div>' +
+        '<div class="row g-4 g-lg-5 align-items-start">' +
+          '<div class="col-12 col-lg-5"><div class="bg-n50 border border-n100 p-4 r-3xl d-flex flex-column align-items-center gap-4 shadow-xs">' +
+            '<div class="w-100 r-2xl overflow-hidden bg-n900" style="aspect-ratio:1"><img src="' + esc(photos[0]) + '" alt="' + esc(d.model) + '" class="w-100 h-100" style="object-fit:cover"></div>' +
+            '<button type="button" class="btn-black-pill w-100 py-3" id="pdfBtn">DOWNLOAD CERTIFICATE PDF</button></div></div>' +
+          '<div class="col-12 col-lg-7"><div class="bg-white border border-n100 r-3xl p-4 p-md-5 shadow-xs">' +
+            '<h3 class="text-xs fw-bold text-n400 ls-widest text-uppercase mb-4">CERTIFICATE DETAILS</h3>' +
+            '<div class="detail-rows text-xs md-text-sm">' +
+              row('Certificate ID', esc(d.certificate_id), 'fw-bold ls-widest text-n900') + row('Brand (แบรนด์)', esc(d.brand || 'N/A')) +
+              row('Model (รุ่น)', esc(d.model || 'N/A')) + row('Category (ประเภท)', esc(d.category || 'LUXURY ITEM')) +
+              row('Authentication Result', '<span class="res-pill ' + t.pill + '">' + t.label + '</span>', '') +
+              row('Date of Issue (วันที่ตรวจ)', fmt(d.issue_date), 'fw-semibold text-n900') +
+              row('Inspected By', 'สถาบันตรวจวิเคราะห์ TRUST LAB (Senior Specialist)', 'fw-semibold text-n900') +
+              row('Total Checkpoints', '100+ POINTS CHECKED', 'fw-semibold text-amber6 text-uppercase ls-wide') +
+            '</div></div></div>' +
+        '</div>' +
+        '<div class="d-grid gap-4 bg-n50 border border-n100 p-4 p-md-5 r-3xl shadow-xs">' +
+          '<div class="d-grid gap-1"><h3 class="text-xs fw-bold text-n400 ls-widest text-uppercase mb-0">PRODUCT DETAILS &amp; CLOSE-UPS</h3>' +
+          '<p class="text-xs text-n500 fw-light mb-0">ภาพถ่ายเจาะลึก 5 จุดตรวจสอบหลักของตัวสินค้าจริง ณ วันที่ตรวจ</p></div>' +
+          '<div class="row g-3">' + photos.map((u, i) => '<div class="col-12 col-md"><button type="button" class="thumb-btn' + (i === 0 ? ' active' : '') + '" data-photo="' + i + '"><img src="' + esc(u) + '" alt="Detail ' + (i + 1) + '"><span>0' + (i + 1) + '</span></button></div>').join('') + '</div>' +
+          '<div class="big-photo"><img id="bigPhoto" src="' + esc(photos[0]) + '" alt="Product close-up inspection detail"></div>' +
+        '</div>' +
+        '<div class="row g-4 user-select-none">' +
+          '<div class="col-12 col-md-6"><div class="bg-n50 border border-n100 p-4 r-2xl d-flex align-items-start gap-3 h-100">' +
+            '<div class="p-2 bg-white text-n800 r-xl shadow-xs mt-1 d-flex">' + TL.icon('hi-clock', 'i-5 sw-15') + '</div>' +
+            '<div class="d-grid gap-1"><h4 class="fs-10px fw-bold text-n400 ls-wider text-uppercase mb-0">ONLINE VERIFICATION VALID UNTIL</h4>' +
+            '<h3 class="text-sm fw-bold text-n900 text-uppercase mb-0">' + fmt(d.expire_date) + '</h3>' +
+            '<p class="text-xs text-n500 fw-light lh-relaxed mb-0">เนื่องจากสภาพกระเป๋าและตำหนิอาจแปรผันตามระยะเวลาและการใช้งานของลูกค้า TRUST LAB แนะนำให้ตรวจผลซ้ำอีกครั้งหากอายุใบเซอร์เกิน 6 เดือนก่อนทำการซื้อขาย</p></div></div></div>' +
+          '<div class="col-12 col-md-6"><div class="bg-n50 border border-n100 p-4 r-2xl d-flex align-items-start gap-3 h-100">' +
+            '<div class="p-2 bg-white text-n800 r-xl shadow-xs mt-1 d-flex">' + TL.icon('hi-exclamation', 'i-5 sw-15') + '</div>' +
+            '<div class="d-grid gap-2"><h4 class="fs-10px fw-bold text-n400 ls-wider text-uppercase mb-0">IMPORTANT NOTICE</h4>' +
+            '<ul class="text-xs text-n500 fw-light ps-3 mb-0 d-grid gap-1"><li>ใบเซอร์สะท้อนสภาวะและตำหนิสินค้า ณ วันที่ส่งตรวจเท่านั้น</li><li>ใบเซอร์เป็นการวิเคราะห์ความเห็นอิสระของสถาบัน ไม่ใช่เกณฑ์รับรองกรรมสิทธิ์หรือรับประกันโดยตัวแบรนด์ผู้ผลิต</li></ul></div></div></div>' +
+        '</div>' +
+      '</section>';
+    out.querySelectorAll('[data-photo]').forEach(b => b.addEventListener('click', () => {
+      out.querySelectorAll('[data-photo]').forEach(x => x.classList.toggle('active', x === b));
+      document.getElementById('bigPhoto').src = photos[Number(b.dataset.photo)];
+    }));
+    document.getElementById('pdfBtn').addEventListener('click', async e => {
+      const b = e.currentTarget;
+      TL.busy(b, true);
+      try { const res = await TL.api(d.pdf_url, { method: 'POST' }); window.open(await TL.waitForFile(res.data.status_url), '_blank'); }
+      catch (err) { TL.toast(err.message, 'error'); }
+      TL.busy(b, false);
+    });
+  }
+
+  function notFound() {
+    out.innerHTML = '<section class="max-w-xl mx-auto bg-n50 border r-3xl p-4 p-md-5 text-center d-grid gap-4 shadow-xs" style="border-color:rgba(229,229,229,.6)!important">' +
+      '<div class="rounded-circle d-flex align-items-center justify-content-center mx-auto text-n600" style="width:3.5rem;height:3.5rem;background:var(--n200)">' + TL.icon('hi-exclamation', 'i-8 sw-2') + '</div>' +
+      '<div class="d-grid gap-2"><h2 class="text-lg md-text-xl fw-bold text-uppercase ls-wider text-n800 mb-0">CERTIFICATE NOT FOUND</h2>' +
+      '<p class="text-xs text-n500 fw-light lh-relaxed mb-0">ไม่พบข้อมูลหมายเลขใบรับรองนี้ในระบบ กรุณาตรวจสอบตัวสะกดหมายเลข Certificate ID อีกครั้ง หรือติดต่อฝ่ายบริการลูกค้าเพื่อตรวจสอบเพิ่มเติม</p></div>' +
+      '<div class="pt-1 d-flex flex-column flex-sm-row gap-2 justify-content-center">' +
+      '<a href="{% url "website:booking" %}" class="btn-black-pill px-4 py-3 ls-wider">นัดหมายจองคิวส่งตรวจใหม่</a>' +
+      '<a href="{% url "website:contact" %}" class="d-inline-block px-4 py-3 rounded-pill text-xs fw-bold text-uppercase ls-wider text-n800 bg-white text-decoration-none" style="border:1px solid var(--n300)">ติดต่อฝ่ายสนับสนุน</a></div></section>';
+  }
+
+  async function lookup(id) {
+    btn.disabled = true; btn.textContent = 'กำลังตรวจ...';
+    out.innerHTML = '<section class="max-w-4xl mx-auto bg-n50 r-3xl p-5 border border-n100 d-flex flex-column align-items-center justify-content-center" style="min-height:300px">' +
+      '<div class="spinner-ring mb-3"></div><p class="text-xs text-n500 fw-medium text-uppercase ls-widest mb-0">AUTHENTICATING WITH DATABASE...</p></section>';
+    try { render((await TL.api(LOOKUP + '?id=' + encodeURIComponent(id))).data); }
+    catch (err) { notFound(); }
+    btn.disabled = false; btn.textContent = 'ตรวจสอบ';
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const id = input.value.trim();
+    if (!id) return;
+    history.replaceState(null, '', '?id=' + encodeURIComponent(id));
+    lookup(id);
+  });
+  if (input.value.trim()) lookup(input.value.trim());
+})();
+</script>
+{% endblock %}

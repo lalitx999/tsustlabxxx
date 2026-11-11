@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load ui %}
+{% block title %}นโยบายความเป็นส่วนตัว (Privacy Policy) | TRUST LAB THAILAND{% endblock %}
+{% block body_class %}privacy-page{% endblock %}
+{% block body %}
+<div class="min-vh-100" style="background:var(--n950);color:var(--n100)">
+  <header class="sticky-top" style="border-bottom:1px solid var(--n800);background:rgba(23,23,23,.5);backdrop-filter:blur(12px)">
+    <div class="mx-auto px-3 px-sm-4 py-3 d-flex align-items-center justify-content-between" style="max-width:56rem">
+      <a href="{% url 'website:home' %}" class="d-inline-flex align-items-center gap-2 text-sm text-n400 text-decoration-none">{% icon 'arrow-left' 'i-4' %}<span>กลับสู่หน้าหลัก</span></a>
+      <span class="text-xs fw-medium px-2 py-1 rounded-pill text-amber4" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)">PDPA Compliance</span>
+    </div>
+  </header>
+  <main class="mx-auto px-3 px-sm-4 py-5 d-grid gap-5" style="max-width:56rem">
+    <div class="d-grid gap-3 pb-4" style="border-bottom:1px solid var(--n800)">
+      <div class="d-inline-flex align-items-center justify-content-center p-3 r-2xl text-amber4 mb-1" style="width:fit-content;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)">{% icon 'shield-check' 'i-8' %}</div>
+      <h1 class="text-2xl md-text-4xl fw-bold ls-tight text-white mb-0">นโยบายความเป็นส่วนตัวและการคุ้มครองข้อมูลส่วนบุคคล</h1>
+      <p class="text-sm text-n400 mb-0">(Privacy Policy &amp; Cookie Policy) • อัปเดตล่าสุด: {{ today|date:"j F Y" }}</p>
+    </div>
+    <div class="text-n300 lh-relaxed text-sm md-text-base">
+      <p class="mb-0"><strong class="text-white">บริษัท ทรัสต์ แล็บ จำกัด (TRUST LAB THAILAND)</strong> (“บริษัทฯ” หรือ “เรา”) ตระหนักและให้ความสำคัญอย่างยิ่งต่อการคุ้มครองข้อมูลส่วนบุคคลของท่าน เพื่อให้ท่านมั่นใจได้ว่าข้อมูลส่วนบุคคลของท่านจะได้รับความคุ้มครองตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+    </div>
+    <section class="d-grid gap-3 p-4 r-2xl" style="background:rgba(23,23,23,.6);border:1px solid var(--n800)">
+      <h2 class="text-lg md-text-xl fw-semibold text-white d-flex align-items-center gap-2 mb-0">{% icon 'eye' 'i-5 text-amber4' %}<span>1. ข้อมูลส่วนบุคคลที่เราเก็บรวบรวม</span></h2>
+      <ul class="text-sm md-text-base text-n300 d-grid gap-2 mb-0 ps-4">
+        <li><strong>ข้อมูลติดต่อส่วนบุคคล:</strong> ชื่อ-นามสกุล, หมายเลขโทรศัพท์, อีเมล, LINE ID</li>
+        <li><strong>ข้อมูลการจองและธุรกรรม:</strong> ประวัติการเข้ารับบริการตรวจสินค้า, รายละเอียดสินค้าแบรนด์เนม, รูปถ่ายสินค้า, ใบเสร็จการชำระเงิน, เลขประจำตัวผู้เสียภาษี (กรณีขอใบกำกับภาษี)</li>
+        <li><strong>ข้อมูลการจัดส่ง:</strong> ชื่อและที่อยู่สำหรับการจัดส่งสินค้าคืน</li>
+        <li><strong>ข้อมูลทางเทคนิคและคุกกี้:</strong> IP Address, ชนิดของเบราว์เซอร์, บันทึกการเข้าชมเว็บไซต์ (Log Data)</li>
+      </ul>
+    </section>
+    <section class="d-grid gap-3 p-4 r-2xl" style="background:rgba(23,23,23,.6);border:1px solid var(--n800)">
+      <h2 class="text-lg md-text-xl fw-semibold text-white d-flex align-items-center gap-2 mb-0">{% icon 'file-text' 'i-5 text-amber4' %}<span>2. วัตถุประสงค์ในการเก็บรวบรวมและใช้ข้อมูล</span></h2>
+      <ul class="list-unstyled text-sm md-text-base text-n300 d-grid gap-2 mb-0">
+        <li class="d-flex align-items-start gap-2">{% icon 'circle-check-big' 'i-5 text-amber4 mt-1' %}<span>เพื่อให้บริการตรวจสอบความแท้ของสินค้าแบรนด์เนม และออกใบรับรอง Certificate (E-Certificate / Physical Card)</span></li>
+        <li class="d-flex align-items-start gap-2">{% icon 'circle-check-big' 'i-5 text-amber4 mt-1' %}<span>เพื่อยืนยันตัวตนและการติดต่อแจ้งผลการตรวจวิเคราะห์</span></li>
+        <li class="d-flex align-items-start gap-2">{% icon 'circle-check-big' 'i-5 text-amber4 mt-1' %}<span>เพื่อบริหารจัดการสิทธิประโยชน์สมาชิก (Membership Tier: Silver, Gold, Platinum, Partner)</span></li>
+        <li class="d-flex align-items-start gap-2">{% icon 'circle-check-big' 'i-5 text-amber4 mt-1' %}<span>เพื่อปฏิบัติตามกฎหมายที่เกี่ยวข้องและระเบียบทางบัญชีและภาษีอากร</span></li>
+      </ul>
+    </section>
+    <section class="d-grid gap-3 p-4 r-2xl" style="background:rgba(23,23,23,.6);border:1px solid var(--n800)">
+      <h2 class="text-lg md-text-xl fw-semibold text-white d-flex align-items-center gap-2 mb-0">{% icon 'lock' 'i-5 text-amber4' %}<span>3. การใช้งานคุกกี้ (Cookies Policy)</span></h2>
+      <p class="text-sm md-text-base text-n300 lh-relaxed mb-0">เว็บไซต์นี้มีการใช้งานคุกกี้เพื่อจดจำการตั้งค่าการใช้งาน เพิ่มประสิทธิภาพในการเข้าชม และรวบรวมข้อมูลสถิติ ท่านสามารถเลือกตั้งค่าการยอมรับหรือปฏิเสธคุกกี้ที่ไม่จำเป็นได้ตลอดเวลาผ่านแถบการตั้งค่าคุกกี้บนเว็บไซต์</p>
+    </section>
+    <section class="p-4 r-2xl d-grid gap-3" style="background:linear-gradient(to bottom right,var(--n900),var(--n950));border:1px solid rgba(245,158,11,.3)">
+      <h2 class="text-lg md-text-xl fw-semibold text-amber4 mb-0">4. ช่องทางการติดต่อเรื่องข้อมูลส่วนบุคคล</h2>
+      <p class="text-sm text-n300 lh-relaxed mb-0">หากท่านมีข้อสงสัยหรือต้องการใช้สิทธิตามกฎหมาย PDPA (เช่น สิทธิในการขอเข้าถึง ขอแก้ไข หรือขอลบข้อมูลส่วนบุคคล) สามารถติดต่อได้ที่:</p>
+      <div class="text-sm fw-medium pt-2" style="color:var(--n200)"><p class="mb-1">สถาบันตรวจวิเคราะห์สินค้าแบรนด์เนม TRUST LAB THAILAND</p><p class="text-n400 mb-0">Email: trustlabthailand@gmail.com</p></div>
+    </section>
+  </main>
+</div>
+{% endblock %}

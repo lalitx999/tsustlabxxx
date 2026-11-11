@@ -1,0 +1,178 @@
+{% extends 'website/member_shell.html' %}
+{% load ui %}
+{% block title %}Member Dashboard | TRUST LAB THAILAND{% endblock %}
+{% block member_content %}
+<div class="row g-4 g-lg-5">
+  <div class="col-12 col-lg-4 d-grid gap-4 align-content-start">
+    <div class="wallet-card shadow-xs">
+      <div class="d-flex align-items-center justify-content-between mb-3 position-relative">
+        <span class="text-xs text-uppercase ls-widest text-n400 fw-semibold">เครดิตสะสมในระบบ</span>
+        <span class="px-2 py-1 text-xs fw-bold text-white rounded-pill" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)">{{ customer.tier_name }}</span>
+      </div>
+      <div class="my-2 position-relative"><span class="text-3xl md-text-4xl fw-extrabold ls-tight">฿{{ customer.credit_balance|baht }}</span></div>
+      <p class="text-xs text-n400 mt-2 mb-0 position-relative">ราคาตรวจสินค้าตามตารางระดับสมาชิก • Photo Review ไม่มีส่วนลดสมาชิก</p>
+      <button type="button" class="btn-gold mt-4 position-relative" data-bs-toggle="modal" data-bs-target="#topupModal">{% icon 'hi-plus' 'i-4 sw-2' %} เติมเครดิตสะสม (Top-up)</button>
+    </div>
+    <div class="white-card p-4">
+      <h3 class="text-sm fw-bold text-n900 mb-2 d-flex align-items-center gap-2">{% icon 'hi-search' 'i-4 sw-2 text-n800' %} ตรวจเช็คใบรับรองสินค้า (Certificate Verify)</h3>
+      <p class="text-xs text-n500 mb-3">ป้อนหมายเลขใบรับรอง (เช่น TL-H5JK-DPSU) เพื่อดึงประวัติการันตีสินค้าแท้/ปลอมทันที</p>
+      <form action="{% url 'website:verify' %}" method="get" class="d-flex gap-2">
+        <input name="id" class="flex-grow-1 px-3 py-2 text-xs r-xl" style="border:1px solid var(--n300)" placeholder="กรอกเลขใบเซอร์..." maxlength="60" required>
+        <button class="px-3 py-2 bg-black text-white r-xl text-xs fw-semibold border-0">ตรวจสอบ</button>
+      </form>
+    </div>
+    <div class="white-card p-4 d-grid gap-3">
+      <h3 class="text-sm fw-bold text-n900 d-flex align-items-center gap-2 mb-0">{% icon 'hi-phone' 'i-4 sw-2 text-n800' %} ศูนย์บริการความช่วยเหลือ</h3>
+      <p class="text-xs text-n500 mb-0">หากคุณต้องการความช่วยเหลือ ติดต่อเราผ่านช่องทาง LINE OA หรือ WeChat ได้ตลอดเวลาทำการ</p>
+      <div class="row g-2 pt-1">
+        <div class="col-6"><a href="https://lin.ee/QqbYaFE" target="_blank" rel="noreferrer" class="d-flex flex-column align-items-center justify-content-center p-3 r-xl text-decoration-none" style="border:1px solid #d1fae5;background:rgba(236,253,245,.5)">
+          {% icon 'hi-chat' 'i-5 sw-2 mb-1' %}<span class="text-xs fw-bold" style="color:#065f46">LINE OA</span><span class="fs-10px" style="color:#059669">@trustlab</span></a></div>
+        <div class="col-6"><a href="https://work.weixin.qq.com" target="_blank" rel="noreferrer" class="d-flex flex-column align-items-center justify-content-center p-3 r-xl text-decoration-none" style="border:1px solid #e0f2fe;background:rgba(240,249,255,.5)">
+          {% icon 'hi-users' 'i-5 sw-2 mb-1' %}<span class="text-xs fw-bold" style="color:#075985">WeChat Work</span><span class="fs-10px" style="color:#0284c7">TrustLab Support</span></a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="white-card p-4 d-flex flex-column" style="min-height:400px">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="text-lg fw-bold text-n900 mb-0">ประวัติการจองและงานตรวจสินค้า</h2>
+        <a href="{% url 'website:booking' %}" class="px-3 py-1 text-xs fw-semibold border border-black rounded-pill text-black text-decoration-none">+ จองคิวใหม่</a>
+      </div>
+      {% if not bookings %}
+      <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        {% icon 'hi-calendar' 'i-12 sw-15 text-n400 mb-3' %}
+        <p class="text-sm fw-semibold text-n800 mb-0">คุณยังไม่มีประวัติการจองคิวในระบบ</p>
+        <p class="text-xs text-n500 mt-1 mb-0" style="max-width:20rem">สามารถจองคิวออนไลน์ล่วงหน้าเพื่อนัดวันเวลาตรวจสอบสินค้าแบรนด์เนมของคุณได้อย่างสะดวกรวดเร็ว</p>
+        <a href="{% url 'website:booking' %}" class="mt-3 px-4 py-2 bg-black text-white r-xl text-xs fw-semibold text-decoration-none">นัดหมายวันเวลาจองคิว</a>
+      </div>
+      {% else %}
+      <div class="d-grid gap-3 flex-grow-1 overflow-auto pe-2" style="max-height:500px">
+        {% for b in bookings %}
+        <div class="bk-row">
+          <div class="d-grid gap-1">
+            <div class="d-flex align-items-center gap-2">
+              <span class="font-monospace text-xs fw-bold text-n800">{{ b.display_id }}</span>
+              {% if b.status == 'completed' %}<span class="text-xs" style="color:#047857">ตรวจเสร็จแล้ว</span>
+              {% elif b.status == 'confirmed' %}<span class="mini-pill mp-ok">ยืนยันคิวแล้ว</span>
+              {% elif b.status == 'cancelled' %}<span class="mini-pill mp-cancel">ยกเลิก</span>
+              {% else %}<span class="mini-pill mp-wait">รอยืนยัน</span>{% endif %}
+            </div>
+            <p class="text-sm fw-semibold text-n900 mb-0">{{ b.brand_name|default:'ไม่ระบุแบรนด์' }} - {{ b.model|default:'ไม่ระบุรุ่น' }}</p>
+            <p class="text-xs text-n500 mb-0">บริการ: <span class="text-n700 fw-medium">{{ b.service_package }}</span> | ยอดชำระ: <span class="text-n700 fw-medium">{{ b.total|baht }} บาท ({{ b.payment_status_label }})</span></p>
+          </div>
+          <div class="d-flex flex-sm-column align-items-start align-items-sm-end justify-content-between justify-content-sm-center text-xs gap-2 border-top border-sm-0 pt-2 pt-sm-0">
+            <div class="text-n500 text-sm-end">
+              {% if b.job.result %}<p class="mb-2 fw-bold">ผลตรวจ: {% if b.job.result == 'authentic' %}แท้{% elif b.job.result == 'fake' %}ปลอม{% else %}สรุปผลไม่ได้{% endif %}
+                {% if b.job.certificate %}<a href="{% url 'website:verify' %}?id={{ b.job.certificate.cert_code|urlencode }}" class="ms-1">{% icon 'external-link' %}</a>{% endif %}</p>{% endif %}
+              <div>วันนัด: <span class="fw-semibold" style="color:var(--n950)">{{ b.booking_date|date:"Y-m-d" }}</span></div>
+              <div>เวลานัด: <span class="fw-semibold" style="color:var(--n950)">{{ b.booking_time|time:"H:i" }} น.</span></div>
+            </div>
+            {% if b.status != 'cancelled' and b.status != 'completed' %}<button type="button" class="px-2 py-1 fs-11px fw-semibold r-lg bg-white" style="color:#dc2626;border:1px solid #fecaca" data-cancel="{{ b.pk }}" data-label="{{ b.display_id }}">ยกเลิกนัดหมาย</button>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="topupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content r-2xl overflow-hidden border-0" style="max-height:90vh">
+      <div class="p-4 border-bottom border-n200 d-flex align-items-center justify-content-between">
+        <h2 class="text-lg fw-bold text-n900 mb-0">เติมเครดิตสะสมเข้ากระเป๋า</h2>
+        <button type="button" class="btn p-1 rounded-circle" data-bs-dismiss="modal" aria-label="Close">{% icon 'hi-x' 'i-5 sw-2 text-n500' %}</button>
+      </div>
+      <div class="p-4 overflow-auto d-grid gap-4">
+        <div class="auth-error mb-0" id="topupError" hidden></div>
+        <div class="d-grid gap-4" id="topupStep1">
+          <div class="d-grid gap-2">
+            <label class="d-block text-sm fw-semibold mb-0">จำนวนเงินที่ต้องการเติม (บาท)
+              <input class="mt-2 w-100 r-xl border p-3" type="number" min="100" step="0.01" id="topupAmount"></label>
+            <div class="d-flex gap-2">
+              <button type="button" class="r-lg border px-3 py-2 text-sm bg-white" data-amount="1000">1,000 บาท</button>
+              <button type="button" class="r-lg border px-3 py-2 text-sm bg-white" data-amount="3000">3,000 บาท</button>
+              <button type="button" class="r-lg border px-3 py-2 text-sm bg-white" data-amount="10000">10,000 บาท</button>
+            </div>
+            <p class="text-xs text-n500 mb-0">เครดิตเพิ่มหลังผู้ดูแลตรวจสอบยอดและสลิป การเติมเงินไม่เปลี่ยนระดับสมาชิกอัตโนมัติ</p>
+          </div>
+          <div>
+            <span class="d-block text-xs fw-bold text-n500 text-uppercase ls-wider mb-3">ช่องทางชำระเงิน</span>
+            <div class="row g-3">
+              <div class="col-6"><button type="button" class="topup-opt sel"><span class="text-sm fw-bold text-n900">PromptPay QR</span><span class="fs-10px text-n500">สแกนชำระทันใจ + อัปสลิป</span></button></div>
+              <div class="col-6"><button type="button" class="topup-opt" disabled title="ยังไม่เปิดรับบัตรออนไลน์"><span class="text-sm fw-bold text-n900">บัตรเครดิต / เดบิต</span><span class="fs-10px text-n500">ยังไม่เปิดให้บริการ</span></button></div>
+            </div>
+          </div>
+        </div>
+        <div class="d-grid gap-4" id="topupStep2" hidden>
+          <div class="p-3 bg-n50 r-xl border border-n200 d-flex align-items-center justify-content-between">
+            <div><span class="fs-10px text-n500 text-uppercase fw-bold ls-wider">ยอดเงินที่ทำรายการ</span><div class="text-sm fw-bold text-n900">เติมเงินสะสมในระบบ</div></div>
+            <span class="text-lg fw-extrabold" style="color:var(--n950)" id="topupShow"></span>
+          </div>
+          <div class="d-flex flex-column align-items-center gap-3">
+            <p class="text-xs text-n500 text-center mb-0">สแกน QR Code ด้านล่างเพื่อทำการโอนชำระเงิน แล้วอัปโหลดรูปภาพสลิปใบเสร็จรับเงิน</p>
+            <div class="p-2 bg-white border border-n200 r-xl"><img id="topupQr" alt="PromptPay QR" style="width:14rem;height:14rem;object-fit:contain"></div>
+            <div class="w-100 d-grid gap-2"><label class="d-block text-xs fw-bold text-n500 text-uppercase ls-wider">อัปโหลดสลิปหลักฐานการโอนเงิน</label><input type="file" accept="image/*" id="topupSlip" class="form-control form-control-sm"></div>
+            <img id="topupSlipPreview" alt="slip thumbnail" class="border border-n200 r-xl" style="width:120px;height:120px;object-fit:cover" hidden>
+          </div>
+        </div>
+        <div class="p-3 r-xl text-center text-sm" style="background:#ecfdf5;color:#047857;border:1px solid #d1fae5" id="topupDone" hidden>รับสลิปแล้ว รอผู้ดูแลตรวจสอบก่อนเพิ่มเครดิต</div>
+      </div>
+      <div class="p-4 border-top border-n200 d-flex justify-content-end gap-2">
+        <button type="button" class="px-4 py-2 text-xs fw-semibold text-n600 bg-transparent border-0" data-bs-dismiss="modal">ปิด</button>
+        <button type="button" class="px-4 py-2 bg-black text-white r-xl text-xs fw-semibold border-0" id="topupNext">ดำเนินการต่อ</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  let step = 1, topupId = null, slip = '';
+  const err = msg => { const e = document.getElementById('topupError'); e.hidden = !msg; e.textContent = msg || ''; };
+  const modal = document.getElementById('topupModal');
+  modal.addEventListener('show.bs.modal', () => {
+    step = 1; topupId = null; slip = ''; err('');
+    document.getElementById('topupAmount').value = '';
+    ['topupStep2', 'topupDone', 'topupSlipPreview'].forEach(id => { document.getElementById(id).hidden = true; });
+    document.getElementById('topupStep1').hidden = false;
+    document.getElementById('topupNext').hidden = false; document.getElementById('topupNext').textContent = 'ดำเนินการต่อ';
+  });
+  modal.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { document.getElementById('topupAmount').value = b.dataset.amount; }));
+  document.getElementById('topupSlip').addEventListener('change', async e => {
+    try { slip = await TL.readImage(e.target.files[0], 1400, .9); const img = document.getElementById('topupSlipPreview'); img.src = slip; img.hidden = false; }
+    catch (x) { err(x.message); }
+  });
+  document.getElementById('topupNext').addEventListener('click', async e => {
+    const btn = e.currentTarget; err('');
+    TL.busy(btn, true);
+    try {
+      if (step === 1) {
+        const amount = document.getElementById('topupAmount').value;
+        const res = await TL.api('{% url "website:member_topup" %}', { method: 'POST', body: { amount: amount } });
+        topupId = res.data.topup_id;
+        document.getElementById('topupQr').src = res.data.qr_image;
+        document.getElementById('topupShow').textContent = '฿' + TL.baht(res.data.amount);
+        document.getElementById('topupStep1').hidden = true; document.getElementById('topupStep2').hidden = false;
+        step = 2; TL.busy(btn, false); btn.textContent = 'ยืนยันส่งสลิป'; return;
+      }
+      if (!slip) throw new Error('กรุณาแนบสลิปการโอนเงิน');
+      await TL.api('{% url "website:member_topup_slip" %}', { method: 'POST', body: { topup_id: topupId, slip: slip } });
+      document.getElementById('topupStep2').hidden = true; document.getElementById('topupDone').hidden = false; btn.hidden = true;
+    } catch (x) { err(x.message); }
+    TL.busy(btn, false);
+  });
+
+  document.querySelectorAll('[data-cancel]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('ยืนยันการยกเลิกนัดหมาย ' + btn.dataset.label + ' ?')) return;
+    try {
+      const res = await TL.api('/member/bookings/' + btn.dataset.cancel + '/cancel/', { method: 'POST', body: { reason: 'ลูกค้ายกเลิกผ่านหน้าสมาชิก' } });
+      TL.toast(res.data.message); setTimeout(() => location.reload(), 800);
+    } catch (x) { TL.toast(x.message, 'error'); }
+  }));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}Authentication Process | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with eyebrow='SCIENTIFIC AUTHENTICATION' title='AUTHENTICATION PROCESS' subtitle='กระบวนการและเทคโนโลยีที่ใช้ตรวจสอบสินค้าแบรนด์เนมหรูหรา ควบคุมโดยผู้เชี่ยวชาญร่วมกับปัญญาประดิษฐ์ (AI) เพื่อความถูกต้องแม่นยำ 100%' %}
+
+{% include 'website/_process_steps.html' %}
+
+<section class="py-section bg-n50 border-top border-bottom border-n100">
+  <div class="container-custom">
+    <div class="section-head text-center mb-5 pb-4">
+      <h2 class="mb-3">100+ MICROSCOPIC CHECKPOINTS</h2>
+      <p class="mx-auto mb-0">ส่องเจาะลึก 5 หมวดหมู่หลักของรายละเอียดตัวสินค้าอย่างเข้มงวดที่สุดในทุกขั้นตอน</p>
+    </div>
+    <div class="row g-4 g-lg-5">
+      {% for heading, items in boxes %}
+      <div class="col-12 col-lg-6">
+        <div class="soft-card p-4 p-md-5 h-100 d-grid gap-4 align-content-start">
+          <h3 class="text-base fw-bold text-n900 text-uppercase ls-wider mb-0">{{ heading }}</h3>
+          <ul class="check-list">{% for title, text in items %}<li>• <strong>{{ title }}</strong>: {{ text }}</li>{% endfor %}</ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="py-section bg-white">
+  <div class="container-custom">
+    <div class="section-head text-center mb-5 pb-4">
+      <h2 class="mb-3">LABORATORY TECHNOLOGY &amp; EQUIPMENT</h2>
+      <p class="mx-auto mb-0">เครื่องมือวิทยาศาสตร์ในห้องปฏิบัติการตรวจของเราที่มีความแม่นยำสูง</p>
+    </div>
+    <div class="row g-4 g-md-5">
+      {% for icon_name, name, label, text in tools %}
+      <div class="col-12 col-md-4">
+        <div class="tool-card">
+          <div class="ico">{% icon icon_name 'i-8 sw-15' %}</div>
+          <div class="d-grid gap-1"><span class="kicker">{{ name }}</span><h3 class="text-sm fw-semibold text-n900 mb-0">{{ label }}</h3><p class="text-xs text-n500 fw-light lh-relaxed mb-0">{{ text }}</p></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center pt-5"><a href="{% url 'website:booking' %}" class="btn-black-pill">ทำรายการส่งสินค้าตรวจ</a></div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4" style="max-width:72rem">
+  <header><h1 class="text-2xl fw-semibold mb-0">Services &amp; Pricing</h1><p class="mt-1 text-sm text-n500 mb-0">ตารางราคาที่ใช้ร่วมกันใน Walk-in และจองออนไลน์</p></header>
+
+  <section class="r-xl border bg-white p-4 p-md-5">
+    <div class="mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3"><h2 class="fw-semibold text-base mb-0">ราคาบริการตามประเภท แบรนด์ และสมาชิก</h2><button type="button" class="bo-btn" id="addRateBtn">เพิ่มราคา</button></div>
+    <p class="mb-3 text-sm text-n500">ทั่วไปและ Silver ราคาเท่ากัน · Gold ลด 5% · Platinum ลด 15% จากราคาทั่วไป · Partner ใช้ราคาแยกตามเดิม · Photo Review 500 บาท ไม่หักส่วนลดสมาชิก</p>
+    <div class="table-responsive"><table class="bo-table compact border">
+      <thead><tr><th>บริการ</th><th>ประเภท</th><th>แบรนด์</th><th>ระดับ</th><th class="text-end">ราคา</th><th></th></tr></thead>
+      <tbody>{% for r in rates %}
+        <tr><td>{% if r.package_id == 'cert_15d' %}ใบรับรอง 15 วัน + แท็ก{% else %}ใบรับรอง 90 วัน + แท็ก{% endif %}</td><td>{{ r.category }}</td><td class="fw-black">{{ r.brand }}</td><td>{{ r.member_tier }}</td>
+          <td class="text-end font-monospace">{{ r.amount|baht }}</td><td class="text-end"><button class="bo-btn-xs danger" data-del="{{ r.id }}">{% icon 'trash-2' %}</button></td></tr>
+      {% empty %}<tr><td colspan="6" class="text-center py-4 text-n400 fw-medium">ยังไม่มีตารางราคา ระบบใช้ราคามาตรฐาน (ตรวจ 1,000 / นาฬิกา 1,500 + ค่าใบรับรอง 90 วัน)</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <form id="rateForm" class="mt-4 d-grid gap-3 r-xl bg-n50 p-4" hidden>
+      <h3 class="fw-medium text-base mb-0">เพิ่ม / แก้ไขราคา</h3>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-3"><label class="text-sm">บริการ<select name="package" class="bo-in"><option value="cert_15d">ใบรับรอง 15 วัน + แท็ก</option><option value="cert_90d">ใบรับรอง 90 วัน + แท็ก</option></select></label></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="text-sm">ประเภท<select name="category" class="bo-in">{% for c in categories %}<option>{{ c }}</option>{% endfor %}</select></label></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="text-sm">แบรนด์<input name="brand" class="bo-in" list="brandList" required><datalist id="brandList">{% for b in brands %}<option value="{{ b.brand_name }}">{% endfor %}</datalist></label></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="text-sm">ระดับ<select name="member_tier" class="bo-in"><option value="general">ทั่วไป</option><option value="partner">Partner</option><option value="corporate">Corporate</option></select></label></div>
+        <div class="col-12 col-sm-6 col-lg-3"><label class="text-sm">ราคา (บาท)<input name="amount" type="number" min="0" step="0.01" class="bo-in" required></label></div>
+      </div>
+      <div class="d-flex gap-2"><button class="bo-btn dark">บันทึกราคา</button><button type="button" class="bo-btn" id="cancelRate">ยกเลิก</button></div>
+    </form>
+  </section>
+
+  <section class="d-grid gap-3 r-xl border bg-white p-4 p-md-5">
+    <h2 class="fw-semibold text-base mb-0">การคำนวณยอดที่เคาน์เตอร์และออนไลน์</h2>
+    <form id="policyForm" class="row g-3 align-items-end">
+      <div class="col-12 col-sm-6"><label class="text-sm">ราคาบริการในตาราง<select name="vat" class="bo-in"><option value="inclusive" {% if policy.prices_include_vat %}selected{% endif %}>รวม VAT 7% แล้ว</option><option value="exclusive" {% if not policy.prices_include_vat %}selected{% endif %}>ยังไม่รวม VAT 7% (บวกเพิ่มตอนชำระ)</option></select></label></div>
+      <div class="col-12 col-sm-6"><label class="text-sm">ค่าจัดส่งสินค้าคืน (บาท)<input name="shipping_fee" type="number" min="0" step="0.01" class="bo-in" value="{{ policy.shipping_fee }}"></label></div>
+      <div class="col-12 col-sm-6"><label class="text-sm d-flex align-items-center gap-2"><input type="checkbox" name="shipping_taxable" {% if policy.shipping_taxable %}checked{% endif %}> ค่าจัดส่งคิด VAT</label></div>
+      <div class="col-12 col-sm-6 text-sm-end"><button class="bo-btn dark">บันทึกการตั้งค่า</button></div>
+    </form>
+    <div class="row g-3">
+      {% for p in packages %}{% if p.code != 'photo_review' %}
+      <div class="col-12 col-sm-6"><label class="text-sm">อายุใบรับรอง {{ p.code }} (วัน)<input type="number" min="1" max="365" class="bo-in" value="{{ p.validity_days }}" data-package="{{ p.code }}"></label></div>
+      {% endif %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="d-grid gap-3 r-xl border bg-white p-4 p-md-5">
+    <h2 class="fw-semibold text-base mb-0">แบรนด์รับตรวจ</h2>
+    <form id="brandForm" class="d-flex gap-3"><input aria-label="ชื่อแบรนด์ใหม่" name="brand_name" class="bo-in mt-0" placeholder="ชื่อแบรนด์" maxlength="100" required><button class="bo-btn">เพิ่มแบรนด์</button></form>
+    <div class="d-flex flex-wrap gap-2">{% for b in brands %}<span class="pill p-neutral d-inline-flex align-items-center gap-1" style="font-size:.75rem">{{ b.brand_name }} <button type="button" class="btn p-0 border-0 lh-1 text-n500" data-brand-del="{{ b.id }}" aria-label="ลบ">{% icon 'x' %}</button></span>{% empty %}<span class="text-sm text-n400">ยังไม่มีแบรนด์ในระบบ</span>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const save = async body => { try { TL.toast((await TL.api('{% url "backoffice:pricing_save" %}', { method: 'POST', body: body })).message); return true; } catch (e) { TL.toast(e.message, 'error'); return false; } };
+  const reload = ok => { if (ok) setTimeout(() => location.reload(), 600); };
+  const rate = document.getElementById('rateForm');
+  document.getElementById('addRateBtn').addEventListener('click', () => { rate.hidden = false; });
+  document.getElementById('cancelRate').addEventListener('click', () => { rate.hidden = true; });
+  rate.addEventListener('submit', async e => { e.preventDefault(); reload(await save({ rate: TL.formData(rate) })); });
+  document.getElementById('policyForm').addEventListener('submit', async e => {
+    e.preventDefault(); const d = TL.formData(e.target);
+    save({ policy: { prices_include_vat: d.vat === 'inclusive', shipping_fee: d.shipping_fee, shipping_taxable: d.shipping_taxable } });
+  });
+  document.querySelectorAll('[data-package]').forEach(i => i.addEventListener('change', () => save({ package: { code: i.dataset.package, validity_days: Number(i.value) } })));
+  document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { if (confirm('ลบราคานี้?') && await save({ delete_rate_id: b.dataset.del })) b.closest('tr').remove(); }));
+  document.getElementById('brandForm').addEventListener('submit', async e => { e.preventDefault(); reload(await save({ brand_name: e.target.brand_name.value })); });
+  document.querySelectorAll('[data-brand-del]').forEach(b => b.addEventListener('click', async () => { if (confirm('ลบแบรนด์นี้?') && await save({ delete_brand_id: b.dataset.brandDel })) b.closest('.pill').remove(); }));
+})();
+</script>
+{% endblock %}

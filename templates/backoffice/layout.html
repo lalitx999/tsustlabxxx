@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load ui %}
+{% block title %}{{ title }} | TRUST LAB Back Office{% endblock %}
+{% block body_class %}bo-body{% endblock %}
+{% block body %}
+<div class="bo-shell">
+  <div class="bo-overlay d-lg-none" id="boOverlay" hidden></div>
+  <aside class="bo-sidebar" id="boSidebar">
+    <div class="d-grid gap-4">
+      <div class="d-flex align-items-center gap-2 border-bottom border-n100 pb-3">
+        <span class="bo-brand">TRUST LAB</span>
+        <span class="bo-badge">{% icon 'shield-check' 'text-n700' %}<span>OFFICIAL</span></span>
+        <button type="button" class="ms-auto d-lg-none bo-modal-x border" data-sidebar-toggle aria-label="Close menu">{% icon 'x' %}</button>
+      </div>
+      <div class="bo-user">
+        <div class="bo-avatar">{{ request.user.initials }}</div>
+        <div class="min-w-0"><h4 class="text-xs fw-black text-n900 text-truncate mb-0">{{ request.user.full_name|default:'ระบบ Admin' }}</h4>
+          <p class="fs-9px text-n500 fw-bold ls-wider text-uppercase mt-1 mb-0">{{ request.user.role|default:'Admin' }}</p></div>
+      </div>
+      <nav class="bo-nav">
+        {% for section in bo_menu %}
+        <div>
+          <h5 class="bo-section">{{ section.title }}</h5>
+          <ul class="list-unstyled d-grid gap-1 mb-0">
+            {% for item in section.items %}<li><a href="{% url item.url_name %}" class="bo-link{% if item.active %} active{% endif %}">{% icon item.icon 'i-4' %}<span>{{ item.label }}</span></a></li>{% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </nav>
+    </div>
+    <div class="pt-3 border-top border-n100 text-center"><p class="fw-bold text-n400 text-uppercase mb-0" style="font-size:8px;letter-spacing:.025em">SECURE SHIELDED ZONE</p></div>
+  </aside>
+
+  <div class="bo-main">
+    <header class="bo-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" class="bo-burger d-lg-none" data-sidebar-toggle aria-label="Menu">{% icon 'menu' 'i-4' %}</button>
+        <span class="bo-session d-none d-sm-inline-block">Secure Session Active</span>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'backoffice:operations' %}" class="bo-bell" title="รายการที่รอดำเนินการ">{% icon 'bell' 'i-4' %}{% if bo_alerts %}<span>{{ bo_alerts }}</span>{% endif %}</a>
+        <form method="post" action="{% url 'accounts:staff_logout' %}" class="m-0">{% csrf_token %}
+          <button type="submit" class="bo-signout">{% icon 'log-out' %}<span>Sign out</span></button>
+        </form>
+      </div>
+    </header>
+    <main class="bo-content">{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const side = document.getElementById('boSidebar'), overlay = document.getElementById('boOverlay');
+  const toggle = () => { const open = side.classList.toggle('open'); overlay.hidden = !open; };
+  document.querySelectorAll('[data-sidebar-toggle]').forEach(b => b.addEventListener('click', toggle));
+  overlay.addEventListener('click', toggle);
+})();
+</script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

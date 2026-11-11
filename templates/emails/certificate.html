@@ -1,0 +1,13 @@
+{% extends 'emails/base.html' %}
+{% block title %}ใบรับรองสินค้า - TRUST LAB{% endblock %}
+{% block subtitle %}เอกสารใบรับรองสินค้า (E-CERTIFICATE ISSUED){% endblock %}
+{% block body %}
+<p style="margin-top:0;">เรียน ท่านลูกค้าผู้มีอุปการคุณ,</p>
+<p>TRUST LAB THAILAND ขอนำส่งใบรับรองอิเล็กทรอนิกส์ (E-Certificate) สำหรับสินค้า <strong>{{ cert.job.brand }} {{ cert.job.model }}</strong></p>
+<table width="100%" cellpadding="8" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;">
+  <tr><td><small style="color:#6B7280;">Certificate ID</small><br><strong style="color:#D4AF37;">{{ cert.cert_code }}</strong></td>
+      <td><small style="color:#6B7280;">สถานะ</small><br><strong>{{ status_label }}</strong></td></tr>
+  <tr><td colspan="2"><small style="color:#6B7280;">ระยะเวลาตรวจสอบออนไลน์</small><br><strong>{{ cert.validity_days }} วัน</strong></td></tr>
+</table>
+<p style="text-align:center;margin-top:24px;"><a href="{{ site_url }}/verify/?id={{ cert.cert_code|urlencode }}" style="background:#111827;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;">เปิดดูใบรับรองออนไลน์</a></p>
+{% endblock %}

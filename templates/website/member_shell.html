@@ -1,0 +1,18 @@
+{% extends 'website/layout.html' %}
+{# Member area frame: same header bar and sub-tabs as the old member layout. #}
+{% block main_class %}bg-n50{% endblock %}
+{% block content %}
+<div class="container-custom py-4 py-md-5" style="min-height:60vh">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-4 border-bottom border-n200">
+    <div>
+      <h1 class="text-2xl md-text-3xl fw-bold ls-tight text-n900 mb-1">ยินดีต้อนรับ, {{ customer.full_name|default:'ลูกค้าทั่วไป' }}</h1>
+      <p class="text-sm text-n500 mb-0">การจัดการเครดิตสะสม ประวัติการตรวจสินค้า และประวัติการจองคิวของคุณ</p>
+    </div>
+    <div class="member-tabs align-self-start align-self-md-auto">
+      <a href="{% url 'website:member_dashboard' %}" class="{% if member_tab == 'overview' %}active{% endif %}">ภาพรวม</a>
+      <a href="{% url 'website:member_profile' %}" class="{% if member_tab == 'profile' %}active{% endif %}">โปรไฟล์สมาชิก</a>
+    </div>
+  </div>
+  {% block member_content %}{% endblock %}
+</div>
+{% endblock %}

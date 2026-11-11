@@ -1,0 +1,60 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head bordered">
+    <div><h1 class="text-2xl fw-black mb-1" style="color:var(--n950)">จัดการโค้ดส่วนลด / Promo Codes</h1><p class="bo-sub light">สร้างและควบคุมโค้ดส่วนลดสำหรับการจองออนไลน์และหน้าร้าน</p></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-12 col-xl-4">
+      <form id="promoForm" class="bo-panel p-4 d-grid gap-3">
+        <h2 class="fw-extrabold text-base text-n900 mb-0">สร้างโค้ดส่วนลดใหม่</h2>
+        <div><label class="bo-lbl">รหัสโค้ด</label><input name="code" class="bo-field text-uppercase" required maxlength="50" placeholder="เช่น PROMO1000"></div>
+        <div><label class="bo-lbl">คำอธิบาย</label><input name="description" class="bo-field" maxlength="255"></div>
+        <div class="row g-2">
+          <div class="col-6"><label class="bo-lbl">ประเภท</label><select name="discount_type" class="bo-field"><option value="fixed">บาท (Fixed)</option><option value="percentage">เปอร์เซ็นต์ (%)</option></select></div>
+          <div class="col-6"><label class="bo-lbl">มูลค่าส่วนลด</label><input name="discount_value" type="number" min="0" step="0.01" class="bo-field" required></div>
+          <div class="col-6"><label class="bo-lbl">ยอดขั้นต่ำ</label><input name="min_spend" type="number" min="0" step="0.01" value="0" class="bo-field"></div>
+          <div class="col-6"><label class="bo-lbl">ลดสูงสุด (กรณี %)</label><input name="max_discount" type="number" min="0" step="0.01" class="bo-field"></div>
+          <div class="col-6"><label class="bo-lbl">เริ่มใช้</label><input name="valid_from" type="datetime-local" class="bo-field"></div>
+          <div class="col-6"><label class="bo-lbl">หมดอายุ</label><input name="valid_to" type="datetime-local" class="bo-field"></div>
+          <div class="col-6"><label class="bo-lbl">จำกัดจำนวนสิทธิ์</label><input name="usage_limit" type="number" min="1" class="bo-field"></div>
+        </div>
+        <label class="d-flex align-items-center gap-2 text-xs fw-bold"><input type="checkbox" name="is_active" checked> เปิดใช้งานทันที</label>
+        <button type="submit" class="btn-submit">{% icon 'plus' %} สร้างโค้ดส่วนลด</button>
+      </form>
+    </div>
+    <div class="col-12 col-xl-8">
+      <div class="bo-panel overflow-hidden">
+        <div class="p-4 border-bottom border-n100"><h2 class="fw-extrabold text-base text-n900 mb-0">รายการโค้ดส่วนลดทั้งหมด ({{ promos|length }})</h2></div>
+        <div class="table-responsive"><table class="bo-table compact">
+          <thead><tr><th>รหัสโค้ด</th><th>ประเภท</th><th>มูลค่าส่วนลด</th><th>ยอดขั้นต่ำ</th><th>การใช้งาน (ใช้แล้ว / จำกัด)</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead>
+          <tbody>{% for p in promos %}
+            <tr><td><span class="font-monospace fw-black" style="color:var(--n950)">{{ p.code }}</span><div class="fs-10px text-n400 fw-medium">{{ p.description }}</div></td>
+              <td>{% if p.discount_type == 'percentage' %}เปอร์เซ็นต์{% else %}บาท{% endif %}</td>
+              <td class="font-monospace">{% if p.discount_type == 'percentage' %}{{ p.discount_value|floatformat:0 }}%{% if p.max_discount %} (สูงสุด ฿{{ p.max_discount|baht }}){% endif %}{% else %}฿{{ p.discount_value|baht }}{% endif %}</td>
+              <td class="font-monospace">฿{{ p.min_spend|baht }}</td><td class="font-monospace">{{ p.used_count }} / {{ p.usage_limit|default:'∞' }}</td>
+              <td>{% if p.is_active %}<span class="pill p-emerald">ใช้งาน</span>{% else %}<span class="pill p-neutral">ปิด</span>{% endif %}</td>
+              <td class="text-end"><button class="bo-btn-xs danger" data-del="{{ p.id }}">{% icon 'trash-2' %} ลบ</button></td></tr>
+          {% empty %}<tr><td colspan="7" class="text-center py-5 text-n400">ยังไม่มีโค้ดส่วนลด</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  document.getElementById('promoForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    try { TL.toast((await TL.api('{% url "backoffice:promo_create" %}', { method: 'POST', body: TL.formData(e.target) })).message); setTimeout(() => location.reload(), 600); } catch (err) { TL.toast(err.message, 'error'); }
+  });
+  document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('ลบโค้ดนี้?')) return;
+    try { TL.toast((await TL.api(BO + 'settings/promo-codes/' + b.dataset.del + '/save/', { method: 'POST', body: { delete: true } })).message); setTimeout(() => location.reload(), 600); } catch (err) { TL.toast(err.message, 'error'); }
+  }));
+})();
+</script>
+{% endblock %}

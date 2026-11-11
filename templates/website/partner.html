@@ -1,0 +1,56 @@
+{% extends 'website/layout.html' %}
+{% load ui %}
+{% block title %}Partner Program | TRUST LAB THAILAND{% endblock %}
+{% block content %}
+{% include 'website/_page_hero.html' with eyebrow='GROW YOUR BUSINESS WITH US' title='PARTNER PROGRAM' subtitle='เพิ่มความเชื่อถือและสร้างยอดขายให้ธุรกิจจำหน่ายสินค้าแบรนด์เนมของคุณ ด้วยตราสัญลักษณ์การรับรองและเกณฑ์การตรวจระดับสากลจาก TRUST LAB' %}
+
+<section class="py-section bg-white">
+  <div class="container-custom">
+    <div class="row g-5 gx-lg-5 align-items-start">
+      <div class="col-12 col-lg-6 d-grid gap-5 pe-lg-4">
+        <div class="section-head d-grid gap-3"><h2 class="mb-0">WHY JOIN TRUST LAB?</h2><p class="mb-0">สิทธิพิเศษมากมายสำหรับร้านค้าสมาชิกแบรนด์เนมและโรงประมูลสินค้าลักชัวรีชั้นนำ</p></div>
+        <div class="d-grid gap-4">
+          {% for icon_name, title, label, text in benefits %}
+          <div class="d-flex gap-4 align-items-start">
+            <div class="benefit-ico">{% icon icon_name 'i-6 sw-15' %}</div>
+            <div class="d-grid gap-1"><span class="fs-9px fw-bold text-n400 ls-wider text-uppercase">{{ title }}</span><h3 class="text-base fw-semibold text-n900 mb-0">{{ label }}</h3><p class="text-xs md-text-sm text-n500 lh-relaxed fw-light mb-0">{{ text }}</p></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="bg-n50 border border-n100 r-3xl p-4 p-md-5 d-grid gap-4">
+          <div class="d-grid gap-1"><h3 class="text-lg fw-bold text-n900 text-uppercase mb-0">BUSINESS ENQUIRY FORM</h3><p class="text-xs text-n500 fw-light mb-0">กรอกรายละเอียดข้อมูลติดต่อเพื่อให้เจ้าหน้าที่พาร์ทเนอร์ชิปติดต่อกลับเสนอแพ็กเกจ</p></div>
+          <form id="partnerForm" class="d-grid gap-3">
+            <div class="row g-3">
+              <div class="col-12 col-sm-6"><label class="f-label">ชื่อผู้ติดต่อ</label><input name="contact_name" class="f-input" required maxlength="255" placeholder="เช่น สมชาย ใจดี"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">ชื่อธุรกิจ / ร้านค้า</label><input name="business_name" class="f-input" required maxlength="255" placeholder="เช่น Luxury Brandname Store"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">เบอร์โทรศัพท์ติดต่อ</label><input name="phone" type="tel" class="f-input" required maxlength="50" placeholder="เช่น 0891234567"></div>
+              <div class="col-12 col-sm-6"><label class="f-label">อีเมล</label><input name="email" type="email" class="f-input" required placeholder="เช่น brand@example.com"></div>
+            </div>
+            <div><label class="f-label">ลิงก์เว็บไซต์ / เพจร้านค้า</label><input name="website" type="url" class="f-input" maxlength="300" placeholder="เช่น https://facebook.com/mybrandstore"></div>
+            <div><label class="f-label">รายละเอียดข้อซักถามเพิ่มเติม</label><textarea name="message" rows="4" class="f-input" maxlength="5000" placeholder="ระบุความประสงค์ของคุณ เช่น ต้องการสมัครแพ็กเกจเครดิตส่งตรวจ 50 ชิ้นต่อเดือน..."></textarea></div>
+            <div class="form-ok d-none" id="partnerOk">{% icon 'hi-check' %} ขอบคุณสำหรับความสนใจ! เจ้าหน้าที่ฝ่ายพาร์ทเนอร์จะติดต่อกลับหาคุณภายใน 24 ชั่วโมง</div>
+            <button type="submit" class="btn-submit">ส่งใบสมัครติดต่อ</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block page_scripts %}
+<script>
+document.getElementById('partnerForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'กำลังส่งข้อมูล...';
+  try {
+    await TL.api('{% url "website:partner_submit" %}', { method: 'POST', body: TL.formData(this) });
+    document.getElementById('partnerOk').classList.remove('d-none');
+    this.reset();
+  } catch (err) { TL.toast(err.message, 'error'); }
+  btn.disabled = false; btn.textContent = 'ส่งใบสมัครติดต่อ';
+});
+</script>
+{% endblock %}

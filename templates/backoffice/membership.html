@@ -1,0 +1,83 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="bo-head mb-2">
+    <div><h1 class="bo-h1">Membership &amp; Credits</h1><p class="bo-sub">ข้อมูลยอดเงินเครดิตคงเหลือและประวัติธุรกรรมของสมาชิก</p></div>
+    {% if request.user.role == 'admin' or request.user.is_superuser %}<button type="button" class="bo-btn dark" data-bs-toggle="modal" data-bs-target="#creditModal">{% icon 'plus' %} ปรับยอดเครดิตสมาชิก</button>{% endif %}
+  </div>
+
+  {% if topups %}
+  <div class="bo-panel p-4 d-grid gap-3">
+    <h3 class="bo-panel-h muted">คำขอเติมเครดิตรอตรวจสอบ ({{ topups|length }} รายการ)</h3>
+    <div class="table-responsive"><table class="bo-table compact">
+      <thead><tr><th>ลูกค้า</th><th>วันที่</th><th class="text-end">ยอดเงิน</th><th>สลิป</th><th class="text-end">การกระทำ</th></tr></thead>
+      <tbody>{% for t in topups %}
+        <tr><td>{{ t.customer.full_name }}</td><td class="text-n500 fw-medium">{{ t.created_at|date:"d/m/Y H:i" }}</td><td class="text-end font-monospace">฿{{ t.amount|baht }}</td>
+          <td>{% if t.slip_photo %}<a href="{{ t.slip_photo.url }}" target="_blank" class="d-inline-flex align-items-center gap-1">{% icon 'image' %} ดูสลิป</a>{% else %}<span class="text-n400 fw-medium">ยังไม่แนบ</span>{% endif %}</td>
+          <td class="text-end text-nowrap">{% if request.user.role == 'admin' or request.user.is_superuser %}<button class="bo-btn-xs" data-topup="{{ t.pk }}" data-action="approve" data-amount="{{ t.amount }}">อนุมัติ</button> <button class="bo-btn-xs danger" data-topup="{{ t.pk }}" data-action="reject" data-amount="{{ t.amount }}">ปฏิเสธ</button>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-8 d-grid gap-3 align-content-start">
+      <h3 class="bo-panel-h muted">รายชื่อยอดเงินสะสมสมาชิก ({{ members|length }} รายการ)</h3>
+      <div class="bo-panel overflow-hidden"><div class="table-responsive"><table class="bo-table">
+        <thead><tr><th>ลูกค้า</th><th>เบอร์โทรศัพท์</th><th>ระดับสมาชิก</th><th>วันที่ลูกค้า / สมาชิก</th><th class="text-end">ยอดเครดิตคงเหลือ</th></tr></thead>
+        <tbody>{% for m in members %}
+          <tr><td>{{ m.full_name }}</td><td class="text-n500 fw-medium">{{ m.phone_number }}</td><td><span class="pill {% if m.tier_name == 'Partner' %}p-purple{% elif m.tier_name == 'Gold' %}p-amber{% else %}p-neutral{% endif %}">{{ m.tier_name }}</span></td>
+            <td class="text-n500 fw-medium">{{ m.first_service_at|date:"d/m/Y"|default:'-' }}</td><td class="text-end font-monospace fw-black" style="color:var(--n950)">฿{{ m.credit_balance|baht }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="text-center py-5 text-n400">ยังไม่มีสมาชิก</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+    </div>
+    <div class="col-12 col-lg-4 d-grid gap-3 align-content-start">
+      <h3 class="bo-panel-h muted">ประวัติการใช้/เติมเครดิตล่าสุด</h3>
+      <div class="bo-panel p-3 d-grid gap-2">
+        {% for tx in ledger %}
+        <div class="d-flex justify-content-between align-items-start gap-2 py-2 {% if not forloop.last %}border-bottom border-n100{% endif %}">
+          <div><p class="text-xs fw-bold text-n900 mb-0">{{ tx.customer.full_name }}</p><p class="fs-10px text-n400 fw-light lh-snug mb-0">{{ tx.reason }} | {{ tx.created_at|date:"d/m/Y H:i" }}</p></div>
+          <span class="text-xs fw-black font-monospace" style="color:{% if tx.amount < 0 %}#dc2626{% else %}#059669{% endif %}">{% if tx.amount > 0 %}+{% endif %}{{ tx.amount|baht }}</span>
+        </div>
+        {% empty %}<p class="text-xs text-n400 fw-medium text-center py-4 mb-0">ไม่มีประวัติการทำธุรกรรมเครดิต</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade bo-modal" id="creditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body position-relative">
+    <button type="button" class="bo-modal-x border position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close">{% icon 'x' %}</button>
+    <h2 class="text-sm fw-black text-n900 text-uppercase ls-widest mb-0">ปรับยอดเครดิตสมาชิก</h2>
+    <form id="creditForm" class="d-grid gap-3">
+      <div><label class="bo-lbl">เบอร์โทรสมาชิก</label><select name="customer_id" class="bo-field" required><option value="">-- เลือกสมาชิก --</option>{% for m in members %}<option value="{{ m.pk }}">{{ m.full_name }} ({{ m.phone_number }})</option>{% endfor %}</select></div>
+      <div class="row g-2"><div class="col-6"><button type="button" class="bo-choice on" data-kind="add">เติมเครดิต</button></div><div class="col-6"><button type="button" class="bo-choice" data-kind="deduct">หักเครดิต</button></div></div>
+      <div><label class="bo-lbl">จำนวนเงิน (บาท)</label><input name="amount" type="number" min="1" step="0.01" class="bo-field" required></div>
+      <div><label class="bo-lbl">เหตุผล / เลขอ้างอิง</label><input name="reason" class="bo-field" required maxlength="200"></div>
+      <button type="submit" class="btn-submit">บันทึกรายการ</button>
+    </form>
+  </div></div></div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  let kind = 'add';
+  document.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', () => { kind = b.dataset.kind; document.querySelectorAll('[data-kind]').forEach(x => x.classList.toggle('on', x === b)); }));
+  const form = document.getElementById('creditForm');
+  if (form) form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = TL.formData(form); d.type = kind; d.request_key = TL.uuid();
+    try { const res = await TL.api('{% url "backoffice:customer_credit" %}', { method: 'POST', body: d }); TL.toast(res.message); setTimeout(() => location.reload(), 700); }
+    catch (err) { TL.toast(err.message, 'error'); }
+  });
+  const base = '{% url "backoffice:home" %}';
+  document.querySelectorAll('[data-topup]').forEach(b => b.addEventListener('click', async () => {
+    const reference = prompt(b.dataset.action === 'approve' ? 'เลขอ้างอิงการโอน' : 'เหตุผลที่ปฏิเสธ'); if (!reference) return;
+    try { const res = await TL.api(base + 'topups/' + b.dataset.topup + '/review/', { method: 'POST', body: { action: b.dataset.action, reference: reference, amount: b.dataset.amount } }); TL.toast(res.message); setTimeout(() => location.reload(), 700); }
+    catch (err) { TL.toast(err.message, 'error'); }
+  }));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'backoffice/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4 mx-auto pb-5" style="max-width:80rem">
+  <header class="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom pb-3">
+    <div>
+      <h1 class="text-2xl fw-extrabold text-n900 ls-tight d-flex align-items-center gap-2 mb-0">{% icon 'truck' 'i-8 text-n800' %} Operations &amp; Delivery</h1>
+      <p class="text-xs text-n500 mt-1 mb-0">ศูนย์บริหารจัดการการจัดส่งสินค้าคืนลูกค้า การพิมพ์ใบปะหน้าพัสดุ และคำขอยกเลิก/คืนเงิน</p>
+    </div>
+    <button type="button" class="bo-btn soft" onclick="location.reload()">{% icon 'refresh-cw' 'i-4' %} รีเฟรชข้อมูล</button>
+  </header>
+
+  <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-lg-5">
+    <div class="col"><div class="bo-stat-tile" style="border-color:#fde68a;background:rgba(255,251,235,.6)"><span class="fs-11px fw-bold text-uppercase ls-wider d-flex align-items-center gap-1" style="color:#92400e">{% icon 'clock' %} รอส่งคืน / รับที่สาขา</span><span class="text-2xl fw-black" style="color:#78350f">{{ counts.pending_return }} รายการ</span></div></div>
+    <div class="col"><div class="bo-stat-tile" style="border-color:#bfdbfe;background:rgba(239,246,255,.6)"><span class="fs-11px fw-bold text-uppercase ls-wider d-flex align-items-center gap-1" style="color:#1e40af">{% icon 'package' %} พร้อมแพ็คส่ง</span><span class="text-2xl fw-black" style="color:#1e3a8a">{{ counts.ready_to_ship }} รายการ</span></div></div>
+    <div class="col"><div class="bo-stat-tile" style="border-color:#e9d5ff;background:rgba(250,245,255,.6)"><span class="fs-11px fw-bold text-uppercase ls-wider d-flex align-items-center gap-1" style="color:#6b21a8">{% icon 'send' %} จัดส่งแล้ว</span><span class="text-2xl fw-black" style="color:#581c87">{{ counts.shipped }} รายการ</span></div></div>
+    <div class="col"><div class="bo-stat-tile" style="border-color:#a7f3d0;background:rgba(236,253,245,.6)"><span class="fs-11px fw-bold text-uppercase ls-wider d-flex align-items-center gap-1" style="color:#065f46">{% icon 'circle-check' %} ลูกค้ารับแล้ว</span><span class="text-2xl fw-black" style="color:#064e3b">{{ counts.delivered }} รายการ</span></div></div>
+    <div class="col"><div class="bo-stat-tile" style="border-color:#fecaca;background:rgba(254,242,242,.6)"><span class="fs-11px fw-bold text-uppercase ls-wider d-flex align-items-center gap-1" style="color:#991b1b">{% icon 'triangle-alert' %} คำขอยกเลิก</span><span class="text-2xl fw-black" style="color:#7f1d1d">{{ cancellations|length }} คำขอ</span></div></div>
+  </div>
+
+  <div class="bo-tabs" role="tablist">
+    <button type="button" class="on" data-tab="shipping">{% icon 'truck' 'i-4' %} จัดการส่งคืนสินค้า</button>
+    <button type="button" data-tab="cancel">{% icon 'ban' 'i-4' %} คำขอยกเลิก / คืนเงิน ({{ cancellations|length }})</button>
+    <button type="button" data-tab="slips">{% icon 'receipt' 'i-4' %} สลิปรอตรวจ ({{ slips|length }})</button>
+  </div>
+
+  <section data-pane="shipping" class="d-grid gap-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-white p-3 r-2xl border">
+      <div class="bo-chipbar" id="shipFilter">
+        <button type="button" class="on" data-f="all">ทั้งหมด</button><button type="button" data-f="pending_return">รอส่งคืน</button><button type="button" data-f="ready_to_ship">พร้อมส่ง</button>
+        <button type="button" data-f="shipped">ส่งแล้ว</button><button type="button" data-f="delivered">ลูกค้ารับแล้ว</button><button type="button" data-f="not_applicable">รับที่สาขา</button>
+      </div>
+    </div>
+    {% for job in jobs %}
+    <div class="bo-panel p-4 d-grid gap-3" data-ship="{{ job.shipping_status }}">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 border-bottom pb-3">
+        <div><div class="d-flex align-items-center gap-2"><span class="font-monospace fw-black text-n900">{{ job.display_id }}</span>
+          <span class="pill {% if job.shipping_status == 'delivered' %}p-emerald{% elif job.shipping_status == 'shipped' %}p-purple{% elif job.shipping_status == 'ready_to_ship' %}p-blue{% elif job.shipping_status == 'pending_return' %}p-amber{% else %}p-neutral{% endif %}">{{ job.get_shipping_status_display }}</span>
+          {% if job.status == 'cancelled' %}<span class="pill p-red">ยกเลิก</span>{% endif %}</div>
+          <p class="text-xs text-n500 mt-1 mb-0">{{ job.brand }} {{ job.model }} • {{ job.customer.full_name }} ({{ job.customer.phone_number }})</p></div>
+        <span class="text-xs text-n400">อัปเดต {{ job.updated_at|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% if job.booking.delivery_method == 'shipping' %}
+      <div class="row g-3 text-xs bg-n50 p-3 r-xl mx-0">
+        <div class="col-12 col-md-6"><div class="text-n400 fw-bold mb-1">ที่อยู่จัดส่งคืน</div><div class="fw-semibold text-n800">{{ job.booking.return_address_name }} • {{ job.booking.return_phone }}</div>
+          <div class="text-n600 fw-normal">{{ job.booking.return_address_detail }} {{ job.booking.return_subdistrict }} {{ job.booking.return_district }} {{ job.booking.return_province }} {{ job.booking.return_postal_code }}</div></div>
+        <div class="col-12 col-md-6"><div class="text-n400 fw-bold mb-1">เลขพัสดุ</div><div class="fw-semibold text-n800 font-monospace">{{ job.tracking_number|default:'-' }}</div></div>
+      </div>
+      {% endif %}
+      {% if job.shipping_status != 'delivered' %}
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width:260px">
+          {% if job.shipping_status == 'ready_to_ship' %}<input class="bo-field bg-white" placeholder="เลขพัสดุ / Tracking number" data-track="{{ job.pk }}" value="{{ job.tracking_number|default:'' }}">{% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          {% if job.booking.delivery_method == 'shipping' %}<button type="button" class="bo-btn soft" data-label="{{ job.pk }}">{% icon 'printer' %} พิมพ์ใบปะหน้า</button>{% endif %}
+          <button type="button" class="bo-btn dark" data-next="{{ job.pk }}" data-status="{{ job.shipping_status }}">
+            {% if job.shipping_status == 'pending_return' %}เตรียมจัดส่งแล้ว{% elif job.shipping_status == 'ready_to_ship' %}บันทึกจัดส่งแล้ว{% elif job.shipping_status == 'shipped' %}ลูกค้ารับแล้ว{% else %}ลูกค้ารับสินค้าที่สาขาแล้ว{% endif %}
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="d-flex align-items-center gap-2 text-xs fw-bold p-3 r-xl" style="color:#065f46;background:rgba(236,253,245,.7);border:1px solid rgba(167,243,208,.8)">{% icon 'circle-check' 'i-4' %} ส่งมอบสินค้าคืนลูกค้าเรียบร้อยแล้ว</div>
+      {% endif %}
+    </div>
+    {% empty %}<div class="bo-empty">ไม่มีงานที่พร้อมส่งคืน</div>{% endfor %}
+  </section>
+
+  <section data-pane="cancel" class="d-grid gap-3" hidden>
+    {% for c in cancellations %}
+    <div class="bo-panel p-4 d-grid gap-2">
+      <div class="d-flex justify-content-between align-items-start border-bottom pb-3 text-xs">
+        <div><div class="fw-black text-n900 text-sm">คำขอยกเลิก #{{ c.pk }} • {{ c.booking.display_id }}</div><div class="text-n500 mt-1">{{ c.booking.customer.full_name }} • ยอดชำระ ฿{{ c.booking.total|baht }} ({{ c.booking.payment_status_label }})</div></div>
+        <span class="pill {% if c.status == 'pending' %}p-amber{% elif c.status == 'approved' %}p-emerald{% else %}p-red{% endif %}">{{ c.status }}</span>
+      </div>
+      <p class="text-xs text-n600 fw-normal mb-0">เหตุผล: {{ c.reason }}</p>
+      {% if c.refund_status == 'pending' %}<p class="text-xs fw-bold mb-0" style="color:#92400e">รอคืนเงิน ฿{{ c.refund_amount|baht }}</p>{% endif %}
+      <div class="d-flex gap-2 justify-content-end pt-2">
+        {% if c.status == 'pending' %}<button class="bo-btn" data-cancel="{{ c.pk }}" data-action="reject">ปฏิเสธ</button><button class="bo-btn dark" data-cancel="{{ c.pk }}" data-action="approve" data-max="{{ c.booking.total }}">อนุมัติยกเลิก</button>
+        {% elif c.refund_status == 'pending' %}<button class="bo-btn dark" data-cancel="{{ c.pk }}" data-action="refund">บันทึกคืนเงินแล้ว</button>{% endif %}
+      </div>
+    </div>
+    {% empty %}<div class="bo-empty">ไม่มีคำขอยกเลิกที่รอดำเนินการ</div>{% endfor %}
+  </section>
+
+  <section data-pane="slips" class="d-grid gap-3" hidden>
+    {% for b in slips %}
+    <div class="bo-panel p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        {% if b.payment_slip %}<a href="{{ b.payment_slip.url }}" target="_blank"><img src="{{ b.payment_slip.url }}" alt="slip" class="r-lg border" style="width:3.5rem;height:4.5rem;object-fit:cover"></a>{% endif %}
+        <div><div class="fw-black text-n900">{{ b.display_id }} • ฿{{ b.total|baht }}</div><div class="text-xs text-n500">{{ b.customer.full_name }} • {{ b.payment_method }} • {{ b.created_at|date:"d/m/Y H:i" }}</div></div>
+      </div>
+      {% if request.user.role == 'admin' or request.user.is_superuser %}
+      <div class="d-flex gap-2"><button class="bo-btn" data-slip="{{ b.pk }}" data-action="reject" data-amount="{{ b.total }}">ปฏิเสธสลิป</button><button class="bo-btn dark" data-slip="{{ b.pk }}" data-action="approve" data-amount="{{ b.total }}">อนุมัติการชำระเงิน</button></div>
+      {% else %}<span class="text-xs text-n400">รอผู้ดูแลระบบตรวจสอบ</span>{% endif %}
+    </div>
+    {% empty %}<div class="bo-empty">ไม่มีสลิปที่รอตรวจสอบ</div>{% endfor %}
+  </section>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const BO = '{% url "backoffice:home" %}';
+  const NEXT = { not_applicable: 'delivered', pending_return: 'ready_to_ship', ready_to_ship: 'shipped', shipped: 'delivered' };
+  document.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('on', x === t));
+    document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t.dataset.tab; });
+  }));
+  document.querySelectorAll('#shipFilter [data-f]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#shipFilter [data-f]').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('[data-ship]').forEach(c => { c.hidden = b.dataset.f !== 'all' && c.dataset.ship !== b.dataset.f; });
+  }));
+  const done = res => { TL.toast(res.message || 'สำเร็จ'); setTimeout(() => location.reload(), 700); };
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-next],[data-label],[data-cancel],[data-slip]');
+    if (!b) return;
+    try {
+      if (b.dataset.next) {
+        const track = document.querySelector('[data-track="' + b.dataset.next + '"]');
+        done(await TL.api(BO + 'jobs/' + b.dataset.next + '/shipping/', { method: 'POST', body: { shipping_status: NEXT[b.dataset.status], tracking_number: track ? track.value : '' } }));
+      } else if (b.dataset.label) {
+        TL.busy(b, true);
+        const res = await TL.api(BO + 'jobs/' + b.dataset.label + '/label/', { method: 'POST' });
+        window.open(await TL.waitForFile(res.data.status_url), '_blank'); TL.busy(b, false);
+      } else if (b.dataset.cancel) {
+        const body = { action: b.dataset.action };
+        if (b.dataset.action === 'approve') { body.refund_amount = prompt('ยอดคืนเงิน (ไม่เกิน ' + b.dataset.max + ' บาท)', '0'); if (body.refund_amount === null) return; }
+        if (b.dataset.action === 'refund') { body.reference = prompt('เลขอ้างอิงหลักฐานคืนเงิน'); if (!body.reference) return; }
+        done(await TL.api(BO + 'cancellations/' + b.dataset.cancel + '/review/', { method: 'POST', body: body }));
+      } else if (b.dataset.slip) {
+        const reference = prompt(b.dataset.action === 'approve' ? 'เลขอ้างอิงการโอน' : 'เหตุผลที่ปฏิเสธ'); if (!reference) return;
+        done(await TL.api(BO + 'bookings/' + b.dataset.slip + '/slip-review/', { method: 'POST', body: { action: b.dataset.action, reference: reference, amount: b.dataset.amount } }));
+      }
+    } catch (err) { TL.busy(b, false); TL.toast(err.message, 'error'); }
+  });
+})();
+</script>
+{% endblock %}

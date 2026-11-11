@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static ui %}
+{% block body %}
+{% block site_header %}
+<header class="site-header">
+  <div class="container-custom">
+    <div class="bar">
+      <a href="{% url 'website:home' %}" class="logo d-flex align-items-center flex-shrink-0">
+        <img src="{% static 'img/logo-trust-lab.png' %}" alt="TRUST LAB THAILAND Logo">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        {% for key, url_name, active in nav %}<a href="{% url url_name %}" class="{% if active %}active{% endif %}">{% t key %}</a>{% endfor %}
+        {% if is_customer %}<a href="{% url 'website:member_dashboard' %}" class="{% if nav_active == 'member' %}active{% endif %}">{% t 'memberPortal' %}</a>
+        {% else %}<a href="{% url 'website:member_login' %}" class="{% if nav_active == 'login' %}active{% endif %}">{% t 'login' %}</a>{% endif %}
+      </nav>
+      <div class="header-actions">
+        <a href="{% url 'website:booking' %}" class="btn-book">{% t 'bookAuth' %}</a>
+        <select class="lang-select" aria-label="Language" data-lang-switch="{% url 'core:set_language' 'LANG' %}?next={{ request.get_full_path|urlencode }}">
+          <option value="th" {% if lang == 'th' %}selected{% endif %}>TH</option>
+          <option value="en" {% if lang == 'en' %}selected{% endif %}>EN</option>
+        </select>
+        <button class="menu-toggle" type="button" aria-label="Toggle menu" aria-expanded="false" data-menu-toggle>
+          <span data-icon-open>{% icon 'hi-menu' 'i-6' %}</span><span data-icon-close hidden>{% icon 'hi-x' 'i-6' %}</span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-nav" id="mobileNav">
+      <nav>
+        {% for key, url_name, active in nav %}<a href="{% url url_name %}">{% t key %}</a>{% endfor %}
+        {% if is_customer %}<a href="{% url 'website:member_dashboard' %}">{% t 'memberPortal' %}</a>{% else %}<a href="{% url 'website:member_login' %}">{% t 'login' %}</a>{% endif %}
+        <a href="{% url 'website:booking' %}" class="btn-book-m">{% t 'bookAuth' %}</a>
+      </nav>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+<main class="{% block main_class %}{% endblock %}">{% block content %}{% endblock %}</main>
+
+{% block site_footer %}
+<footer class="site-footer">
+  <div class="container-custom inner">
+    <div class="row g-5">
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="d-flex align-items-center gap-2 mb-3"><img src="{% static 'img/logo-trust-lab.png' %}" alt="TRUST LAB Logo" class="footer-logo"></div>
+        <p class="text-xs md-text-sm text-g400 mb-4 ls-wider">{% t 'tagline' %}</p>
+        <div class="social d-flex gap-3">
+          <a href="https://www.instagram.com/trustlab.thailand" aria-label="Instagram">Instagram</a>
+          <a href="https://lin.ee/QqbYaFE" aria-label="LINE">LINE</a>
+          <a href="https://www.facebook.com/share/1BZGU36WJZ/?mibextid=wwXIfr" aria-label="Facebook">Facebook</a>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <h4>{% t 'companyTitle' %}</h4>
+        <ul>
+          <li><a href="{% url 'website:about' %}">{% t 'aboutUs' %}</a></li>
+          <li><a href="{% url 'website:process' %}">{% t 'authProcess' %}</a></li>
+          <li><a href="{% url 'website:partner' %}">{% t 'partner' %}</a></li>
+          <li><a href="{% url 'website:contact' %}">{% t 'contactUs' %}</a></li>
+        </ul>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <h4>{% t 'servicesTitle' %}</h4>
+        <ul>
+          <li><a href="{% url 'website:services' %}">{% t 'authService' %}</a></li>
+          <li><a href="{% url 'website:services' %}">{% t 'authCert' %}</a></li>
+          <li><a href="{% url 'website:verify' %}">{% t 'certVerification' %}</a></li>
+          <li><a href="{% url 'website:services' %}">{% t 'membershipProg' %}</a></li>
+        </ul>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <h4>{% t 'contactTitle' %}</h4>
+        <ul class="text-g300">
+          <li class="d-flex align-items-start gap-2">{% icon 'phone' 'i-4' %}<a href="tel:0640678666">{% t 'phoneVal' %}</a></li>
+          <li class="d-flex align-items-start gap-2">{% icon 'mail' 'i-4' %}<span>{% t 'emailVal' %}</span></li>
+          <li class="d-flex align-items-start gap-2">{% icon 'map-pin' 'i-4' %}<a href="https://maps.app.goo.gl/j8UoiQ7Ej9w3LbMo7" target="_blank" rel="noopener noreferrer" class="text-decoration-underline-hover">{% t 'addressVal' %}</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="disclaimer"><p class="mb-0">{% t 'disclaimer' %}</p></div>
+    <div class="bottom">
+      <p class="mb-0">{% t 'copyright' %}</p>
+      <div class="d-flex gap-4"><a href="{% url 'website:privacy' %}">{% t 'privacyPolicy' %}</a><a href="{% url 'website:terms' %}">{% t 'termsConditions' %}</a></div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+{% include 'website/_cookie_consent.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const toggle = document.querySelector('[data-menu-toggle]');
+  if (toggle) toggle.addEventListener('click', () => {
+    const nav = document.getElementById('mobileNav');
+    const open = nav.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open);
+    toggle.querySelector('[data-icon-open]').hidden = open;
+    toggle.querySelector('[data-icon-close]').hidden = !open;
+  });
+  const lang = document.querySelector('[data-lang-switch]');
+  if (lang) lang.addEventListener('change', () => { location.href = lang.dataset.langSwitch.replace('LANG', lang.value); });
+})();
+</script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

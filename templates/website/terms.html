@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}เงื่อนไขและข้อตกลงการให้บริการ | TRUST LAB THAILAND{% endblock %}
+{% block body %}
+{# The old terms page was a plain document page without header/footer. #}
+<main class="mx-auto px-4 py-5 my-4" style="max-width:56rem">
+  <header class="mb-5"><h1 class="text-2xl fw-bold mb-2">เงื่อนไขและข้อตกลงการให้บริการ</h1><p class="text-lg mb-0">Terms and Conditions of Service</p></header>
+  <section lang="en" class="mb-5"><h2 class="text-xl fw-semibold mb-3">IMPORTANT NOTICE</h2>
+    <ul class="lh-relaxed ps-4 d-grid gap-4">{% for text in notice %}<li>{{ text }}</li>{% endfor %}</ul></section>
+  <hr class="my-5">
+  <section lang="th"><h2 class="text-xl fw-semibold mb-3">ข้อความสำคัญ</h2>
+    <ul class="lh-relaxed ps-4 d-grid gap-4">{% for text in notice_th %}<li>{{ text }}</li>{% endfor %}</ul></section>
+</main>
+{% endblock %}

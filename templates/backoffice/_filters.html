@@ -1,0 +1,32 @@
+{# Same filter box as the old RecordFilters component (search, brand, date range). Client-side filtering. #}
+<section class="bo-filters" id="recordFilters">
+  <div class="row g-3">
+    <div class="col-12 col-md-6 col-xl-3"><label>ค้นหาชื่อลูกค้า / เลข Job, Booking, Certificate<input class="bo-in" data-f="search" placeholder="ชื่อ เบอร์ หรือเลขอ้างอิง"></label></div>
+    <div class="col-12 col-md-6 col-xl-3"><label>แบรนด์<input class="bo-in" data-f="brand" placeholder="ชื่อแบรนด์"></label></div>
+    <div class="col-12 col-md-6 col-xl-3"><label>{{ date_label }} ตั้งแต่<input type="date" class="bo-in" data-f="from"></label></div>
+    <div class="col-12 col-md-6 col-xl-3"><label>ถึงวันที่<input type="date" class="bo-in" data-f="to"></label></div>
+  </div>
+  <div class="d-flex align-items-center justify-content-between text-sm"><span>พบ <span data-f-count>0</span> {{ unit }} จากทั้งหมด <span data-f-total>0</span> {{ unit }}</span>
+    <button type="button" class="btn btn-link btn-sm text-n600 p-0" data-f-clear>ล้างตัวกรอง</button></div>
+  <p class="text-sm mb-0" role="alert" style="color:#b91c1c" data-f-error hidden>วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด</p>
+</section>
+<script>
+window.TLFilters = (function () {
+  const root = document.getElementById('recordFilters');
+  const get = k => root.querySelector('[data-f="' + k + '"]').value.trim();
+  let cb = () => {};
+  root.addEventListener('input', () => { root.querySelector('[data-f-error]').hidden = !(get('from') && get('to') && get('from') > get('to')); cb(); });
+  root.querySelector('[data-f-clear]').addEventListener('click', () => { root.querySelectorAll('[data-f]').forEach(i => { i.value = ''; }); cb(); });
+  return {
+    onChange: fn => { cb = fn; },
+    count: (n, total) => { root.querySelector('[data-f-count]').textContent = n.toLocaleString('th-TH'); root.querySelector('[data-f-total]').textContent = total.toLocaleString('th-TH'); },
+    match: row => {
+      const q = get('search').toLocaleLowerCase(), brand = get('brand').toLocaleLowerCase(), from = get('from'), to = get('to');
+      const text = Object.values(row).filter(v => typeof v === 'string' || typeof v === 'number').join(' ').toLocaleLowerCase();
+      const date = String(row.booking_date || row.created_at || row.issued || '').slice(0, 10);
+      return (!q || text.includes(q)) && (!brand || String(row.brand || row.brand_name || '').toLocaleLowerCase().includes(brand))
+        && (!from || (date && date >= from)) && (!to || (date && date <= to));
+    }
+  };
+})();
+</script>

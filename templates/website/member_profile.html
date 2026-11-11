@@ -1,0 +1,68 @@
+{% extends 'website/member_shell.html' %}
+{% load ui %}
+{% block title %}Member Profile | TRUST LAB THAILAND{% endblock %}
+{% block member_content %}
+<div class="row g-4 g-lg-5">
+  <div class="col-12 col-lg-4">
+    <div class="d-flex flex-column align-items-center">
+      <div class="member-card mc-{{ customer.tier_name|lower }}">
+        <div class="d-flex align-items-center justify-content-between position-relative"><span class="fw-extrabold ls-widest text-xs">TRUST LAB LUXURY</span><div class="mc-chip"></div></div>
+        <div class="my-2 position-relative"><span class="fs-10px text-uppercase ls-wider" style="opacity:.6">ยอดเครดิตสะสม</span><div class="text-xl md-text-2xl fw-bold ls-tight mt-1">฿{{ customer.credit_balance|baht }}</div></div>
+        <div class="d-flex align-items-end justify-content-between position-relative">
+          <div><div class="fs-10px text-uppercase ls-widest" style="opacity:.6">ชื่อผู้ถือบัตร</div><div class="text-sm fw-semibold text-truncate" style="max-width:180px">{{ customer.full_name }}</div></div>
+          <div class="text-end"><div class="fs-10px text-uppercase ls-widest" style="opacity:.6">ระดับคลาส</div><div class="text-sm fw-bold text-uppercase">{{ customer.tier_name }} MEMBER</div></div>
+        </div>
+      </div>
+      <p class="text-xs text-n500 text-center mt-3 mb-0">แสดงบัตรสมาชิกจำลองทุกครั้งเมื่อเข้าใช้บริการจองคิวออนไลน์หรือหน้าสาขา</p>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="white-card p-4 p-md-5">
+      <h2 class="text-lg fw-bold text-n900 mb-4">ข้อมูลบัญชีและข้อมูลส่วนบุคคล</h2>
+      <div class="auth-error" id="pfError" hidden></div>
+      <div class="p-3 r-xl text-center text-sm mb-4" style="background:#ecfdf5;color:#047857;border:1px solid #d1fae5" id="pfOk" hidden></div>
+      <form id="profileForm" class="d-grid gap-4">
+        <div class="row g-3">
+          <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">ชื่อผู้ใช้งาน (ไม่สามารถเปลี่ยนได้)</label><input class="input-locked" value="{{ request.user.username }}" disabled></div>
+          <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">เบอร์โทรศัพท์ (ไม่สามารถเปลี่ยนได้)</label><input class="input-locked" value="{{ customer.phone_number }}" disabled></div>
+          <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">ชื่อ-นามสกุลจริง</label><input name="full_name" class="auth-input" value="{{ customer.full_name }}" placeholder="กรอกชื่อและนามสกุลจริงของคุณ" required maxlength="100"></div>
+          <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">ที่อยู่อีเมล</label><input name="email" type="email" class="auth-input" value="{{ customer.email|default:'' }}" placeholder="name@example.com"></div>
+        </div>
+        <hr class="my-0" style="border-color:var(--n100);opacity:1">
+        <div>
+          <h3 class="text-sm fw-bold text-n900 mb-3">เปลี่ยนรหัสผ่านความปลอดภัย (กรอกเฉพาะเมื่อต้องการเปลี่ยน)</h3>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">รหัสผ่านใหม่</label><input name="password" type="password" class="auth-input" placeholder="กรอกรหัสผ่านใหม่" minlength="8" autocomplete="new-password"></div>
+            <div class="col-12 col-md-6"><label class="d-block text-sm fw-medium text-n700 mb-2">ยืนยันรหัสผ่านใหม่</label><input name="confirm_password" type="password" class="auth-input" placeholder="กรอกยืนยันรหัสผ่านใหม่" minlength="8" autocomplete="new-password"></div>
+          </div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between pt-3 border-top border-n100">
+          <div class="fs-11px text-n400">ระบบสมาชิกความปลอดภัย · TrustLab Version 1.0</div>
+          <div class="d-flex align-items-center gap-3">
+            <button type="submit" form="logoutForm" class="px-3 py-2 text-xs fw-bold bg-transparent border-0" style="color:#dc2626">ออกจากระบบ</button>
+            <button type="submit" class="px-4 py-2 bg-black text-white r-xl text-xs fw-semibold border-0">บันทึกข้อมูล</button>
+          </div>
+        </div>
+      </form>
+      <form id="logoutForm" method="post" action="{% url 'website:member_logout' %}">{% csrf_token %}</form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block page_scripts %}
+<script>
+document.getElementById('profileForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = this.querySelector('button[type=submit]:not([form])');
+  const errBox = document.getElementById('pfError'), ok = document.getElementById('pfOk');
+  errBox.hidden = true; ok.hidden = true;
+  TL.busy(btn, true);
+  try {
+    const res = await TL.api('{% url "website:member_profile" %}', { method: 'POST', body: TL.formData(this) });
+    ok.textContent = res.message; ok.hidden = false;
+    this.password.value = ''; this.confirm_password.value = '';
+  } catch (err) { errBox.textContent = err.message; errBox.hidden = false; }
+  TL.busy(btn, false);
+});
+</script>
+{% endblock %}
