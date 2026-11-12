@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load ui %}
+{% block title %}TRUST LAB — รายละเอียดสำหรับลูกค้า{% endblock %}
+{% block body_class %}pos-body{% endblock %}
+{% block body %}
+<header class="pos-head"><b>TRUST LAB</b><span>รายละเอียดสำหรับลูกค้า</span></header>
+<div class="pos-idle" id="idle">
+  <h1>ยินดีต้อนรับ</h1>
+  <p>รอเจ้าหน้าที่ตรวจสอบรายการและคำนวณยอด</p>
+</div>
+<div class="pos-sale" id="sale" hidden>
+  <section class="d-grid gap-4 align-content-start">
+    <h1 id="pCustomer"></h1>
+    <p class="pos-item" id="pItem"></p>
+    <p class="mb-0" id="pService"></p>
+    <div class="pos-sum">
+      <p><span>ยอดก่อน VAT</span><b><span id="pSubtotal"></span> บาท</b></p>
+      <p><span>VAT 7%</span><b><span id="pVat"></span> บาท</b></p>
+      <p><span>ค่าจัดส่งที่รวมในยอด</span><b><span id="pShip"></span> บาท</b></p>
+      <p class="total"><span>ยอดชำระ</span><b><span id="pTotal"></span> บาท</b></p>
+    </div>
+    <p class="text-sm mb-0" id="pStatus"></p>
+  </section>
+  <section class="pos-qr" id="pQr"></section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  // Receives the current sale from the Walk-in tab in this same browser (no server round trip).
+  const channel = new BroadcastChannel('trustlab_checkout_v2');
+  const $ = id => document.getElementById(id);
+  const IDLE_MS = 30 * 60 * 1000;
+  let timer;
+  function show(d) {
+    clearTimeout(timer);
+    if (!d) { $('sale').hidden = true; $('idle').hidden = false; return; }
+    $('pCustomer').textContent = d.customerName || 'รายการตรวจสินค้า';
+    $('pItem').textContent = [d.brand, d.model].filter(Boolean).join(' ');
+    $('pService').textContent = d.serviceName || '';
+    $('pSubtotal').textContent = TL.baht(d.quote.subtotal);
+    $('pVat').textContent = TL.baht(d.quote.vat_amount);
+    $('pShip').textContent = TL.baht(d.quote.shipping_fee);
+    $('pTotal').textContent = TL.baht(d.quote.total);
+    const paid = d.paymentStatus === 'paid';
+    $('pStatus').textContent = paid ? '' : d.paymentStatus === 'pending_review' ? 'รอตรวจสอบสลิป' : 'กรุณาตรวจสอบยอดก่อนชำระ';
+    const qr = $('pQr');
+    if (paid) qr.innerHTML = '<span class="pos-paid">' + TL.icon('circle-check') + ' ชำระแล้ว ขอบคุณที่ใช้บริการ</span>';
+    else if (typeof d.qr === 'string' && d.qr.startsWith('data:image/png;base64,')) { qr.innerHTML = '<img alt="QR ชำระตามยอดที่ยืนยัน"><p class="text-sm mb-0">สแกนแล้วแนบสลิปให้เจ้าหน้าที่ตรวจสอบ</p>'; qr.querySelector('img').src = d.qr; }
+    else qr.innerHTML = '<p class="text-n500 mb-0">ชำระเงินตามช่องทางที่เลือกกับเจ้าหน้าที่</p>';
+    $('idle').hidden = true; $('sale').hidden = false;
+    timer = setTimeout(() => show(null), IDLE_MS);
+  }
+  channel.onmessage = e => {
+    if (!e.data) return;
+    if (e.data.type === 'snapshot') show(e.data.value && e.data.value.quote ? e.data.value : null);
+    if (e.data.type === 'clear') show(null);
+  };
+  channel.postMessage({ type: 'request_snapshot' });
+})();
+</script>
+{% endblock %}

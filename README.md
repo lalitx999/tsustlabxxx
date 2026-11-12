@@ -43,6 +43,7 @@ createdb trustlabx
 - หน้าเว็บ: http://localhost:8000/
 - หลังบ้าน: http://localhost:8000/login/ → /authenzs/administator/ (path เดียวกับเว็บเดิม)
 - หน้าผู้เชี่ยวชาญ: /authenzs/expert/jobs/ (expert ล็อกอินแล้วเข้าหน้านี้อัตโนมัติ)
+- จอลูกค้า: /pos-display/ (เปิดจากปุ่ม "เปิดจอลูกค้า" ในหน้า Walk-in แล้วลากไปจอที่สอง)
 - Django Admin เดิม (เฉพาะ superuser): /django-admin/
 
 ทดสอบ: `.venv/bin/python manage.py test --settings=config.settings.test`
@@ -90,6 +91,6 @@ DATABASE_URL=postgres:///trustlab python manage.py migrate --fake-initial
 
 ## สิ่งที่ยังไม่ได้ย้าย (เฟสถัดไป)
 
-- แอปกล้อง `trustlabcam` แบบเต็มจอ และหน้า POS display สำหรับลูกค้า (ตอนนี้ถ่าย/อัปโหลดรูปได้จาก modal งานใน Job List)
+- แอปกล้อง `trustlabcam` แบบเต็มจอ (ตอนนี้ถ่าย/อัปโหลดรูปได้จาก modal งานใน Job List และหน้าผู้เชี่ยวชาญ)
 - เข้าสู่ระบบด้วย LINE, ตรวจสลิปอัตโนมัติ EasySlip
 - เนื้อหาหน้า about/services แบบเต็มทุกย่อหน้า และคำแปลภาษาอังกฤษของหน้าภายใน
