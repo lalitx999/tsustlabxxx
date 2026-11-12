@@ -1,7 +1,7 @@
 """Read-side queries for bookings (always select_related to avoid N+1)."""
 import datetime
 
-from django.db.models import Q
+from django.db.models import Count, Q
 
 from apps.bookings.models import Booking, CancellationRequest
 
@@ -32,6 +32,28 @@ def booking_list(*, status=None, date=None, query=None, payment_status=None, lim
 def bookings_for_day(day: datetime.date):
     return (Booking.objects.select_related(*LIST_RELATED)
             .filter(Q(booking_date=day) | Q(created_at__date=day)).order_by('booking_time', '-pk'))
+
+
+def camera_bookings(day: datetime.date):
+    """Bookings for the TrustLab Cam day list, with the number of staff photos (one query)."""
+    return (Booking.objects.select_related('customer', 'job')
+            .filter(Q(booking_date=day) | Q(created_at__date=day))
+            .annotate(staff_photos=Count('photos', filter=Q(photos__photo_type='staff')))
+            .order_by('booking_time', '-pk'))
+
+
+def camera_bookings_one(booking_id):
+    return (Booking.objects.select_related('customer', 'job')
+            .annotate(staff_photos=Count('photos', filter=Q(photos__photo_type='staff')))
+            .filter(pk=booking_id).first())
+
+
+def serialize_camera_booking(b: Booking) -> dict:
+    job = getattr(b, 'job', None)
+    return {'id': b.pk, 'display_id': b.display_id, 'status': b.status, 'job_status': job.status if job else '',
+            'queue_no': job.queue_no if job else '', 'customer_name': b.customer.full_name,
+            'category': b.category, 'brand': b.brand_name, 'model': b.model,
+            'staff_photos': getattr(b, 'staff_photos', 0)}
 
 
 def booking_detail(booking_id):

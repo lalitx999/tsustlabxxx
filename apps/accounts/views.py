@@ -28,7 +28,9 @@ def staff_login(request):
         else:
             login(request, user)
             return redirect(target or _home_for(user))
-    return render(request, 'accounts/login.html', {'next': target})
+    # TrustLab Cam keeps its own phone-style sign-in screen (as on the old site).
+    template = 'camera/login.html' if target.startswith('/trustlabcam/') else 'accounts/login.html'
+    return render(request, template, {'next': target})
 
 
 @require_POST

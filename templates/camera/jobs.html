@@ -1,0 +1,69 @@
+{% extends 'camera/base.html' %}
+{% load ui %}
+{% block app %}
+<header class="cam-head">
+  <div class="d-flex align-items-center gap-3">
+    <span class="cam-logo">{% icon 'camera' %}</span>
+    <div><h1 class="text-sm fw-semibold mb-0">TrustLab Cam</h1>
+      <div class="d-flex align-items-center gap-1" style="font-size:10px;color:var(--cam-g400)">{% icon 'user' %} {{ request.user.display_name }}</div></div>
+  </div>
+  <div class="d-flex align-items-center gap-1">
+    <button type="button" class="cam-icon-btn" id="reloadBtn" title="รีเฟรชรายการ" aria-label="รีเฟรชรายการ">{% icon 'refresh-cw' %}</button>
+    <form method="post" action="{% url 'accounts:staff_logout' %}" class="m-0">{% csrf_token %}<button class="cam-icon-btn out" title="ออกจากระบบ" aria-label="ออกจากระบบ">{% icon 'log-out' %}</button></form>
+  </div>
+</header>
+<div class="cam-search">{% icon 'search' %}<input type="search" id="search" class="cam-input" placeholder="ค้นหารหัสจอง, ชื่อลูกค้า, แบรนด์..." aria-label="ค้นหา"></div>
+<main class="cam-scroll">
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2"><span class="text-xs fw-medium" style="color:var(--cam-g500)" id="heading">รายการคิวจองวันนี้ (0)</span>
+      <button type="button" class="cam-today" id="todayBtn" hidden>กลับมาวันนี้</button></div>
+    <label class="cam-date">{% icon 'calendar' %}<b id="dateLabel" class="fw-semibold" style="color:var(--cam-g800)"></b><input type="date" id="dateInput" value="{{ today }}" aria-label="เลือกวันที่"></label>
+  </div>
+  <div class="d-grid gap-3" id="list"><div class="text-center py-5 text-xs" style="color:var(--cam-g400)">กำลังโหลดรายการ...</div></div>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const ROWS = '{% url "camera:rows" %}', CAP = '{% url "camera:jobs" %}', TODAY = '{{ today }}', MAX = {{ max_photos }};
+  const list = document.getElementById('list'), input = document.getElementById('dateInput');
+  let rows = [];
+  const thaiDate = v => { const [y, m, d] = v.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }); };
+  const ST = { pending: 'รอตรวจ', in_progress: 'กำลังตรวจ', completed: 'ตรวจเสร็จ', cancelled: 'ยกเลิก' };
+  function render() {
+    const q = document.getElementById('search').value.toLowerCase().trim(), day = input.value, isToday = day === TODAY;
+    const shown = rows.filter(r => !q || [r.display_id, r.customer_name, r.brand, r.model, r.queue_no].some(v => (v || '').toLowerCase().includes(q)));
+    document.getElementById('heading').textContent = (isToday ? 'รายการคิวจองวันนี้' : 'รายการคิวจองวันที่ ' + thaiDate(day)) + ' (' + shown.length + ')';
+    document.getElementById('todayBtn').hidden = isToday;
+    document.getElementById('dateLabel').textContent = thaiDate(day);
+    if (!shown.length) {
+      list.innerHTML = '<div class="cam-empty d-grid gap-2 justify-items-center">' + TL.icon('folder-open', 'big mx-auto') +
+        '<p class="fw-medium text-sm mb-0" style="color:var(--cam-g500)">' + (isToday ? 'ไม่พบรายการงานตรวจของวันนี้' : 'ไม่พบรายการงานตรวจของวันที่ ' + thaiDate(day)) + '</p>' +
+        '<p class="text-xs mb-0" style="color:var(--cam-g400)">ไม่มีการบันทึกคิวงานเข้ามาในวันที่เลือก หรือลองค้นหาด้วยคำอื่น</p></div>';
+      return;
+    }
+    list.innerHTML = shown.map(r => { const st = r.job_status || r.status, n = r.staff_photos;
+      return '<a class="cam-job" href="' + CAP + r.id + '/"><div class="flex-grow-1 min-w-0 d-grid gap-2">' +
+        '<span class="text-sm font-monospace fw-semibold">' + TL.esc(r.display_id) + (r.queue_no ? ' <span class="fw-normal" style="color:var(--cam-g400)">· คิว ' + TL.esc(r.queue_no) + '</span>' : '') + '</span>' +
+        '<div class="row g-1 text-xs"><div class="col-6 text-truncate" style="color:var(--cam-g500)"><span style="color:var(--cam-g400)">ลูกค้า:</span> <span class="fw-medium" style="color:#374151">' + TL.esc(r.customer_name || 'ลูกค้าทั่วไป') + '</span></div>' +
+        '<div class="col-6 text-end text-truncate"><span style="color:var(--cam-g400)">ประเภท:</span> <span class="fw-medium" style="color:#374151">' + TL.esc(r.category || '-') + '</span></div>' +
+        '<div class="col-12 fw-medium text-truncate" style="color:var(--cam-g600)">' + TL.esc(r.brand) + (r.model ? ' • ' + TL.esc(r.model) : '') + '</div></div></div>' +
+        '<div class="d-flex align-items-center gap-3 flex-shrink-0"><div class="d-flex flex-column align-items-end gap-2">' +
+        '<span class="cam-count' + (n >= MAX ? ' full' : n > 0 ? ' has' : '') + '">' + TL.icon('camera') + n + '/' + MAX + '</span>' +
+        '<span class="cam-st ' + st + '">' + (ST[st] || st) + '</span></div><span style="color:#d1d5db">' + TL.icon('chevron-right') + '</span></div></a>'; }).join('');
+  }
+  async function load() {
+    const btn = document.getElementById('reloadBtn'); btn.disabled = true;
+    try { rows = (await TL.api(ROWS + '?date=' + encodeURIComponent(input.value || TODAY))).data; render(); }
+    catch (err) { TL.toast(err.message, 'error'); }
+    btn.disabled = false;
+  }
+  input.addEventListener('change', () => { if (input.value) load(); });
+  document.querySelector('.cam-date').addEventListener('click', () => { try { input.showPicker(); } catch (e) { /* older browsers open on tap */ } });
+  document.getElementById('todayBtn').addEventListener('click', () => { input.value = TODAY; load(); });
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('reloadBtn').addEventListener('click', load);
+  load();
+})();
+</script>
+{% endblock %}

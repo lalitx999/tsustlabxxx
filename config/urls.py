@@ -17,6 +17,7 @@ urlpatterns = [
     path('authenzs/administator/', include('apps.backoffice.urls')),
     path('authenzs/expert/', include('apps.backoffice.expert_urls')),
     path('pos-display/', pos_display, name='pos_display'),
+    path('trustlabcam/', include('apps.backoffice.camera_urls')),
     path('django-admin/', admin.site.urls),
 ]
 

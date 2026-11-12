@@ -27,6 +27,7 @@ ICONS = [
     'message-circle', 'funnel', 'ban', 'rotate-ccw', 'banknote', 'percent',
     'cookie', 'star', 'chevron-up', 'circle-check-big', 'shield', 'chart-line', 'monitor',
     'database', 'image-off', 'link-2', 'zoom-in', 'zoom-out', 'rotate-cw',
+    'play', 'circle', 'arrow-up', 'folder-open', 'camera-off',
 ]
 
 

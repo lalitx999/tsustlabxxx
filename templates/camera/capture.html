@@ -1,0 +1,156 @@
+{% extends 'camera/base.html' %}
+{% load ui %}
+{% block app %}
+<header class="cam-head">
+  <a href="{% url 'camera:jobs' %}" class="cam-icon-btn back" id="backBtn" aria-label="กลับไปรายการ">{% icon 'chevron-left' %}</a>
+  <div class="text-center">
+    <span class="font-monospace fw-semibold" style="font-size:10px;color:var(--cam-blue);letter-spacing:.05em">{{ booking.display_id }}{% if booking.queue_no %} · คิว {{ booking.queue_no }}{% endif %}</span>
+    <h1 class="text-xs fw-medium mb-0 mt-1" style="color:var(--cam-g600)">กล้องตรวจสภาพ</h1>
+  </div>
+  <div class="text-end"><span class="d-block fw-medium" style="font-size:9px;color:var(--cam-g400)">รูปภาพ</span>
+    <span class="d-block text-xs fw-semibold font-monospace" id="counter"></span></div>
+</header>
+
+<div class="cam-info">
+  <div class="d-flex align-items-center gap-2 min-w-0">{% icon 'user' %}<div class="min-w-0"><small>ลูกค้า</small><b class="d-block text-truncate">{{ booking.customer_name|default:'ลูกค้าทั่วไป' }}</b></div></div>
+  <div class="d-flex align-items-center gap-2 text-end min-w-0">{% icon 'package' %}<div class="min-w-0"><small>สินค้า</small><b class="d-block text-truncate" style="color:var(--cam-blue)">{{ booking.brand }}{% if booking.model %} • {{ booking.model }}{% endif %}</b></div></div>
+</div>
+
+<div class="cam-view">
+  {# The video element stays in the page so Safari does not crash when the camera restarts. #}
+  <video id="video" autoplay playsinline muted hidden></video>
+  <div id="live" hidden>
+    <div class="cam-grid"></div><div class="cam-cross"></div>
+    <div class="cam-shutterbar">
+      <button type="button" class="cam-ghost" id="stopBtn">ปิดกล้อง</button>
+      <button type="button" class="cam-shutter" id="shutter" aria-label="ถ่ายรูป">{% icon 'circle' %}</button>
+      <span class="cam-plus" id="plus">+0</span>
+    </div>
+  </div>
+  <div class="cam-off" id="off">
+    <div>
+      <div class="dot" id="offIcon">{% icon 'camera' %}</div>
+      <h3 id="offTitle">กล้องปิดอยู่</h3>
+      <p id="offText">กดเปิดกล้องเพื่อเริ่มถ่ายรูปตรวจสภาพสินค้า</p>
+      <button type="button" class="cam-btn mt-4" id="startBtn">{% icon 'play' %} เปิดกล้อง</button>
+    </div>
+  </div>
+</div>
+
+<label class="cam-pick">เลือกรูปจากเครื่อง / มือถือ (JPG, PNG, WebP)
+  <input type="file" id="picker" accept="image/jpeg,image/png,image/webp" multiple class="d-block w-100 mt-2">
+</label>
+
+<div class="cam-strip" id="strip" hidden>
+  <span class="d-flex align-items-center gap-1 fw-medium" style="font-size:10px;color:var(--cam-blue)">{% icon 'image' %} รูปถ่ายใหม่รออัปโหลด (<span id="pendingCount">0</span> รูป)</span>
+  <div class="cam-strip-row" id="shots"></div>
+</div>
+<div class="cam-upload" id="uploadBar" hidden>
+  <button type="button" class="cam-btn green full" id="uploadBtn">{% icon 'arrow-up' %} <span id="uploadLabel">อัปโหลดรูปภาพ</span></button>
+</div>
+<footer class="cam-foot">TrustLab Studio • Live Photo Sync</footer>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const UPLOAD = '{% url "backoffice:booking_photos_add" booking.id %}', MAX = {{ max_photos }}, BATCH = 5;
+  let existing = {{ booking.staff_photos }}, shots = [], stream = null, busy = false;
+  const $ = id => document.getElementById(id), video = $('video');
+  const total = () => existing + shots.length;
+
+  function paint() {
+    const full = total() >= MAX;
+    $('counter').textContent = total() + '/' + MAX;
+    $('counter').style.color = full ? '#ef4444' : 'var(--cam-blue)';
+    $('plus').textContent = '+' + shots.length;
+    $('shutter').disabled = full;
+    $('pendingCount').textContent = shots.length;
+    $('strip').hidden = $('uploadBar').hidden = !shots.length;
+    const label = $('uploadLabel');  // missing while the button shows its busy spinner
+    if (label) label.textContent = 'อัปโหลดรูปภาพ (' + shots.length + ' รูป)';
+    $('shots').innerHTML = shots.map((src, i) => '<div class="cam-shot"><img src="' + src + '" alt="รูปที่ ' + (i + 1) + '"><span class="n">' + (i + 1) + '</span>' +
+      '<button type="button" data-del="' + i + '" aria-label="ลบรูปที่ ' + (i + 1) + '">' + TL.icon('x') + '</button></div>').join('');
+    if (!stream) {
+      $('startBtn').hidden = full;
+      if (!$('offTitle').dataset.error) $('offText').textContent = full ? 'ครบโควตา ' + MAX + ' ภาพแล้ว ไม่สามารถถ่ายเพิ่มได้' : 'กดเปิดกล้องเพื่อเริ่มถ่ายรูปตรวจสภาพสินค้า';
+    }
+    $('picker').disabled = full || busy;
+  }
+
+  function showOff(error) {
+    $('offTitle').dataset.error = error ? '1' : '';
+    $('offTitle').textContent = error ? 'เปิดกล้องไม่ได้' : 'กล้องปิดอยู่';
+    $('offText').textContent = error || '';
+    $('offText').style.color = error ? '#f87171' : '';
+    $('offIcon').innerHTML = TL.icon(error ? 'camera-off' : 'camera');
+    $('off').hidden = false; $('live').hidden = true; video.hidden = true;
+    paint();
+  }
+  function stop() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    video.srcObject = null; showOff('');
+  }
+  async function start() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showOff('เบราว์เซอร์นี้ใช้กล้องไม่ได้ (ต้องเปิดผ่าน HTTPS) — ใช้ปุ่มเลือกรูปจากเครื่องด้านล่างแทน'); return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      video.srcObject = stream; await video.play();
+      video.hidden = false; $('live').hidden = false; $('off').hidden = true; paint();
+    } catch (err) {
+      stream = null;
+      showOff(err.name === 'NotAllowedError' ? 'กรุณาอนุญาตให้เข้าถึงกล้อง แล้วลองอีกครั้ง'
+        : err.name === 'NotFoundError' ? 'ไม่พบกล้องบนอุปกรณ์นี้' : 'เกิดข้อผิดพลาด: ' + err.message);
+    }
+  }
+  function capture() {
+    if (total() >= MAX) { TL.toast('งานตรวจนี้มีรูปครบ ' + MAX + ' ภาพแล้ว', 'error'); return; }
+    // Keep photos at most 1280px so phones do not run out of memory.
+    const limit = 1280; let w = video.videoWidth || 1280, h = video.videoHeight || 720;
+    if (w > limit || h > limit) { if (w > h) { h = Math.round(h * limit / w); w = limit; } else { w = Math.round(w * limit / h); h = limit; } }
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+    shots.push(canvas.toDataURL('image/jpeg', 0.8));
+    canvas.width = canvas.height = 0;
+    TL.toast('ถ่ายรูปที่ ' + total() + ' เรียบร้อย');
+    paint();
+  }
+  async function upload() {
+    if (!shots.length || busy) return;
+    busy = true; const btn = $('uploadBtn'); TL.busy(btn, true);
+    let sent = 0;
+    try {
+      while (shots.length) {
+        const batch = shots.slice(0, BATCH);
+        await TL.api(UPLOAD, { method: 'POST', body: { photos: batch } });
+        shots.splice(0, batch.length); existing += batch.length; sent += batch.length; paint();
+      }
+      TL.toast('อัปโหลดรูปภาพสำเร็จ ' + sent + ' ภาพ');
+      stop();
+    } catch (err) {
+      TL.toast((sent ? 'อัปโหลดแล้ว ' + sent + ' ภาพ • ' : '') + err.message, 'error');
+    }
+    busy = false; TL.busy(btn, false); paint();
+  }
+
+  $('startBtn').addEventListener('click', start);
+  $('stopBtn').addEventListener('click', stop);
+  $('shutter').addEventListener('click', capture);
+  $('uploadBtn').addEventListener('click', upload);
+  $('shots').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { shots.splice(Number(b.dataset.del), 1); paint(); } });
+  $('picker').addEventListener('change', async e => {
+    const files = Array.from(e.target.files || []); e.target.value = '';
+    if (files.length + total() > MAX) { TL.toast('สูงสุด ' + MAX + ' ภาพต่อชุดเจ้าหน้าที่', 'error'); return; }
+    try { for (const f of files) shots.push(await TL.readImage(f, 1280, 0.8)); paint(); }
+    catch (err) { TL.toast(err.message, 'error'); }
+  });
+  $('backBtn').addEventListener('click', e => {
+    if (shots.length && !confirm('ยังมีรูปที่ยังไม่อัปโหลด ' + shots.length + ' รูป ออกจากหน้านี้หรือไม่?')) { e.preventDefault(); return; }
+    stop();
+  });
+  window.addEventListener('pagehide', () => { if (stream) stream.getTracks().forEach(t => t.stop()); });
+  paint();
+})();
+</script>
+{% endblock %}

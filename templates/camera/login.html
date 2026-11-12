@@ -1,0 +1,26 @@
+{% extends 'camera/base.html' %}
+{% load ui %}
+{% block app %}
+<div class="cam-login">
+  <div class="d-grid gap-4 position-relative">
+    <div class="text-center d-grid gap-3">
+      <div><span class="badge-ic">{% icon 'shield' %}</span></div>
+      <div>
+        <h1 class="fs-5 fw-semibold mb-0" style="color:#111827">TrustLab <span style="color:var(--cam-blue)">Cam</span></h1>
+        <p class="text-xs fw-medium mt-1 mb-0" style="color:var(--cam-g400)">ระบบกล้องตรวจสอบหน้าร้าน</p>
+      </div>
+    </div>
+    {% for m in messages %}<div class="text-sm rounded-3 p-2 text-center" style="background:#fef2f2;color:#dc2626;border:1px solid #fee2e2">{{ m.message }}</div>{% endfor %}
+    <form method="post" action="{% url 'accounts:staff_login' %}" class="d-grid gap-3">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next|default:'/trustlabcam/jobs/' }}">
+      <label class="d-grid gap-1 text-xs fw-medium" style="color:var(--cam-g600)">รหัสพนักงาน
+        <span class="cam-field">{% icon 'user' %}<input name="username" class="cam-input lg" placeholder="กรอกรหัสพนักงาน" autocomplete="username" required autofocus></span></label>
+      <label class="d-grid gap-1 text-xs fw-medium" style="color:var(--cam-g600)">รหัสผ่าน
+        <span class="cam-field">{% icon 'lock' %}<input name="password" type="password" class="cam-input lg" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required></span></label>
+      <button class="cam-btn full mt-3">เข้าสู่ระบบ {% icon 'arrow-right' %}</button>
+    </form>
+    <p class="text-center fw-medium mb-0" style="font-size:10px;color:#d1d5db">TrustLab Laboratory System</p>
+  </div>
+</div>
+{% endblock %}
