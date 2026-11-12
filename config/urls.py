@@ -13,6 +13,7 @@ urlpatterns = [
     # Same paths as the old site so staff bookmarks keep working.
     path('', include('apps.accounts.urls')),
     path('authenzs/administator/', include('apps.backoffice.urls')),
+    path('authenzs/expert/', include('apps.backoffice.expert_urls')),
     path('django-admin/', admin.site.urls),
 ]
 

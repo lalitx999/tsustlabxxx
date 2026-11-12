@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load ui %}
+{% block title %}{{ title }} | TRUST LAB Expert{% endblock %}
+{% block body_class %}ex-body{% endblock %}
+{% block body %}
+<header class="ex-header">
+  <div class="ex-wrap d-flex align-items-center justify-content-between gap-3">
+    <a href="{% url 'expert:jobs' %}" class="d-flex align-items-center gap-2 text-decoration-none">
+      <span class="ex-brand">TRUST LAB</span><span class="ex-portal d-none d-sm-inline">EXPERT SPECIALIST PORTAL</span>
+    </a>
+    <nav class="d-none d-md-flex align-items-center gap-2">
+      <a href="{% url 'expert:jobs' %}" class="ex-nav">รายการงานตรวจวิเคราะห์ (Inspection Queue)</a>
+      {% if can_open_backoffice %}<a href="{% url 'backoffice:dashboard' %}" class="ex-nav ghost">ระบบหลังบ้าน</a>{% endif %}
+    </nav>
+    <div class="d-flex align-items-center gap-3">
+      <div class="text-end d-none d-sm-block">
+        <div class="text-xs fw-black">{{ request.user.display_name }}</div>
+        <div class="font-monospace text-uppercase text-n400" style="font-size:10px">{% if request.user.role == 'expert' %}Senior Authentication Inspector{% else %}{{ request.user.role }}{% endif %}</div>
+      </div>
+      <form method="post" action="{% url 'accounts:staff_logout' %}" class="m-0">{% csrf_token %}<button class="ex-logout">ออกจากระบบ</button></form>
+    </div>
+  </div>
+</header>
+<main class="ex-main"><div class="ex-wrap">{% block content %}{% endblock %}</div></main>
+<footer class="ex-footer">TRUST LAB LABORATORY SYSTEM — EXPERT WORKBENCH (SECURE RESTRICTED ACCESS)</footer>
+{% endblock %}

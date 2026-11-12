@@ -22,6 +22,20 @@ def job_list(*, status=None, query=None, shipping=None, limit=300):
     return queryset[:limit]
 
 
+def expert_queue(limit=300):
+    """Jobs for the expert workbench (not cancelled), each with its booking photos."""
+    return (Job.objects.select_related('customer', 'booking', 'certificate')
+            .prefetch_related(Prefetch('booking__photos', queryset=BookingPhoto.objects.order_by('uploaded_at', 'pk')))
+            .exclude(status='cancelled').order_by('-created_at')[:limit])
+
+
+def serialize_expert_job(job: Job) -> dict:
+    data = serialize_job(job)
+    photos = job.booking.photos.all() if job.booking_id else []
+    data['photos'] = [{'id': p.pk, 'url': p.photo.url, 'type': p.photo_type} for p in photos if p.photo]
+    return data
+
+
 def today_queue():
     return (Job.objects.select_related('customer', 'booking')
             .filter(created_at__date=timezone.localdate()).exclude(status='cancelled').order_by('queue_no'))

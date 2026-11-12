@@ -1,0 +1,191 @@
+{% extends 'expert/layout.html' %}
+{% load ui %}
+{% block content %}
+<div class="d-grid gap-4">
+  <div class="ex-bar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="d-flex flex-wrap align-items-center gap-2" id="chips">
+      <span class="text-xs fw-bold text-n400 text-uppercase me-2">สถานะงาน:</span>
+      <button type="button" class="ex-chip on" data-status="all">ทั้งหมด (<span>0</span>)</button>
+      <button type="button" class="ex-chip" data-status="pending">รอดำเนินการ (<span>0</span>)</button>
+      <button type="button" class="ex-chip" data-status="in_progress">กำลังตรวจ (<span>0</span>)</button>
+      <button type="button" class="ex-chip" data-status="completed">เสร็จสิ้น (<span>0</span>)</button>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <input type="search" id="search" class="ex-search" placeholder="ค้นหาเลขคิว, แบรนด์, รุ่น, ลูกค้า..." aria-label="ค้นหางาน">
+      <button type="button" class="bo-btn dark flex-shrink-0" id="reloadBtn">{% icon 'refresh-cw' %} อัปเดต</button>
+    </div>
+  </div>
+
+  <div id="errorBox" hidden class="p-4 r-2xl text-xs fw-bold" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c"></div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-5">
+      <h2 class="text-xs fw-black text-uppercase text-n400 px-1 mb-3">คิวงานตรวจในระบบ (<span id="listCount">0</span> รายการ)</h2>
+      <div class="ex-list" id="list"><div class="ex-empty">กำลังโหลดคิวงานตรวจวิเคราะห์...</div></div>
+    </div>
+    <div class="col-12 col-lg-7" id="bench"><div class="ex-empty">เลือกรายการคิวงานตรวจทางด้านซ้ายเพื่อดำเนินการ</div></div>
+  </div>
+</div>
+
+<div class="ex-lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="ดูรูปขยาย">
+  <div class="ex-lb-bar">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="ex-lb-tag me-2">EXPERT PHOTO INSPECTOR</span>
+      <span class="ex-lb-meter">ZOOM: <b id="lbZoom">100%</b></span>
+      <span class="ex-lb-meter">ROTATE: <b id="lbRot">0°</b></span>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-1">
+      <button type="button" class="ex-lb-btn" data-lb="in" title="ซูมเข้า (+25%)">{% icon 'zoom-in' %} ซูมเข้า</button>
+      <button type="button" class="ex-lb-btn" data-lb="out" title="ซูมออก (-25%)">{% icon 'zoom-out' %} ซูมออก</button>
+      <button type="button" class="ex-lb-btn" data-lb="left" title="หมุนซ้าย 90°">{% icon 'rotate-ccw' %} หมุนซ้าย -90°</button>
+      <button type="button" class="ex-lb-btn" data-lb="right" title="หมุนขวา 90°">{% icon 'rotate-cw' %} หมุนขวา +90°</button>
+      <button type="button" class="ex-lb-btn" data-lb="reset" title="รีเซ็ตตำแหน่งภาพ">{% icon 'refresh-cw' %} รีเซ็ต</button>
+      <button type="button" class="ex-lb-btn close" data-lb="close">{% icon 'x' %} ปิด (Close)</button>
+    </div>
+  </div>
+  <div class="ex-lb-stage" id="lbStage"><img id="lbImg" alt="รูปตรวจขยาย"></div>
+  <div class="ex-lb-help">{% icon 'info' %} ใช้ลูกกลิ้งเมาส์ซูมเข้า-ออกได้ | กดปุ่มเพื่อหมุนภาพ | กด Esc เพื่อปิด</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const ROWS = '{% url "expert:rows" %}', BO = '{% url "backoffice:home" %}', CERT = '{% url "backoffice:certificates" %}';
+  const ST = { completed: 'เสร็จสิ้น', in_progress: 'กำลังตรวจ', pending: 'รอดำเนินการ' };
+  const BADGE = { authentic: 'AUTHENTIC (แท้)', fake: 'FAKE (ปลอม)', inconclusive: 'INCONCLUSIVE (ตรวจไม่ได้)' };
+  const list = document.getElementById('list'), bench = document.getElementById('bench');
+  let jobs = [], filter = 'all', selectedId = null, form = { result: 'pending' };
+
+  const visible = () => {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    return jobs.filter(j => (filter === 'all' || j.status === filter) && (!q ||
+      [j.queue_no, j.brand, j.model, j.customer_name, j.serial_number, j.display_id].some(v => (v || '').toLowerCase().includes(q))));
+  };
+
+  function renderList() {
+    document.querySelectorAll('#chips [data-status]').forEach(c => {
+      c.classList.toggle('on', c.dataset.status === filter);
+      c.querySelector('span').textContent = c.dataset.status === 'all' ? jobs.length : jobs.filter(j => j.status === c.dataset.status).length;
+    });
+    const rows = visible();
+    document.getElementById('listCount').textContent = rows.length;
+    if (!rows.length) { list.innerHTML = '<div class="ex-empty" style="padding:2rem">ไม่พบคิวงานตามเงื่อนไขที่เลือก</div>'; return; }
+    list.innerHTML = rows.map(j => { const p = j.photos[0], res = j.result || 'pending';
+      return '<button type="button" class="ex-job' + (j.id === selectedId ? ' on' : '') + '" data-id="' + j.id + '">' +
+        '<div class="d-flex align-items-start gap-3 w-100"><div class="ex-thumb">' +
+          (p ? '<img src="' + TL.esc(p.url) + '" alt="">' : '<span class="none">NO IMAGE</span>') +
+          (j.photos.length ? '<span class="count">' + j.photos.length + ' รูป</span>' : '') + '</div>' +
+        '<div class="flex-grow-1 min-w-0 d-grid gap-1"><div class="d-flex align-items-center justify-content-between gap-2">' +
+          '<span class="font-monospace text-sm fw-black">' + TL.esc(j.queue_no || j.display_id) + '</span><span class="ex-st ' + j.status + '">' + (ST[j.status] || j.status) + '</span></div>' +
+          '<div class="text-xs fw-black text-truncate">' + TL.esc(j.brand) + ' <span class="fw-normal text-n500">' + TL.esc(j.model) + '</span></div>' +
+          '<div class="text-n500 fw-medium text-truncate" style="font-size:11px">ลูกค้า: ' + TL.esc(j.customer_name || 'ลูกค้าทั่วไป') + ' | ' + TL.esc(j.category || '-') + '</div></div></div>' +
+        '<div class="ex-foot"><span class="text-truncate">Serial: ' + TL.esc(j.serial_number || '-') + '</span><span class="fw-bold text-uppercase ex-res-' + res + '">RESULT: ' + res + '</span></div></button>'; }).join('');
+  }
+
+  function renderBench() {
+    const j = jobs.find(x => x.id === selectedId);
+    if (!j) { bench.innerHTML = '<div class="ex-empty">เลือกรายการคิวงานตรวจทางด้านซ้ายเพื่อดำเนินการ</div>'; return; }
+    const res = form.result, locked = !!j.certificate_code;
+    const resBtn = (v, t, s) => '<button type="button" class="ex-result ' + v + (res === v ? ' on' : '') + '" data-result="' + v + '"' + (locked ? ' disabled' : '') + '><b>' + t + '</b><small>' + s + '</small></button>';
+    const opt = (v, t) => '<option value="' + v + '"' + (form.status === v ? ' selected' : '') + '>' + t + '</option>';
+    bench.innerHTML = '<div class="ex-bench">' +
+      '<div class="border-bottom border-n200 pb-3 d-flex align-items-center justify-content-between gap-3"><div class="min-w-0">' +
+        '<span class="ex-kicker">EXPERT WORKBENCH</span><h2 class="ex-title">' + TL.esc(j.brand) + ' ' + TL.esc(j.model) + '</h2>' +
+        '<p class="text-xs text-n500 font-monospace mt-1 mb-0">QUEUE: <b class="text-n900">' + TL.esc(j.queue_no || j.display_id) + '</b> | SERIAL: <b class="text-n900">' + TL.esc(j.serial_number || '-') + '</b></p>' +
+        (j.certificate_code ? '<a class="text-xs fw-bold" href="' + CERT + encodeURIComponent(j.certificate_code) + '/">' + TL.icon('award') + ' ใบรับรอง ' + TL.esc(j.certificate_code) + '</a>' : '') +
+      '</div><span class="ex-badge ' + res + '">' + (BADGE[res] || 'PENDING REVIEW') + '</span></div>' +
+      '<div class="d-grid gap-2"><span class="ex-kicker">รูปภาพถ่ายตรวจชิ้นงาน (' + j.photos.length + ' ภาพ) - คลิกเพื่อขยายดูจุดตรวจ</span>' +
+        (j.photos.length ? '<div class="ex-gallery">' + j.photos.map(p => '<button type="button" data-zoom="' + TL.esc(p.url) + '"><img src="' + TL.esc(p.url) + '" alt=""><span class="t">' + TL.esc(p.type) + '</span></button>').join('') + '</div>'
+          : '<div class="ex-info d-block text-center text-n400 fw-medium">ไม่มีรูปภาพแนบในใบงานนี้ สามารถอัปโหลดรูปถ่ายเพิ่มเติมได้ด้านล่าง</div>') + '</div>' +
+      '<div class="ex-info"><div><small>ประเภทสินค้า</small><b>' + TL.esc(j.category || '-') + '</b></div>' +
+        '<div><small>วัสดุ &amp; สี</small><b>' + TL.esc(j.material || '-') + ' / ' + TL.esc(j.color || '-') + '</b></div>' +
+        '<div><small>อุปกรณ์ที่มาด้วย</small><b>' + TL.esc(j.accessories || '-') + '</b></div>' +
+        '<div class="wide"><small>หมายเหตุจากหน้าร้าน</small><span class="fw-medium">' + TL.esc(j.notes || 'ไม่มีหมายเหตุเพิ่มเติม') + '</span></div></div>' +
+      '<form id="benchForm" class="d-grid gap-4">' +
+        '<div class="row g-3"><div class="col-12 col-md-6"><label class="ex-lbl">เลขแท็ก (งานตรวจจริงที่ผ่าน)<input name="tag_code" class="ex-in mt-1" maxlength="100" value="' + TL.esc(form.tag_code) + '"></label></div>' +
+          '<div class="col-12 col-md-6"><label class="ex-lbl">ผู้ให้ผลตรวจ / แหล่งอ้างอิง<input name="expert_source" class="ex-in mt-1" maxlength="255" value="' + TL.esc(form.expert_source) + '"></label></div></div>' +
+        '<div><span class="ex-lbl">ผลการตรวจวิเคราะห์ความแท้จริง (Authenticity Result) *</span><div class="ex-results">' +
+          resBtn('authentic', 'AUTHENTIC', 'ยืนยันเป็นของแท้') + resBtn('fake', 'FAKE / REPLICA', 'ยืนยันเป็นของปลอม') + resBtn('inconclusive', 'INCONCLUSIVE', 'ไม่สามารถระบุได้') + '</div>' +
+          (locked ? '<p class="text-xs text-n500 mt-2 mb-0">งานนี้ออกใบรับรองแล้ว หากต้องเปลี่ยนผลให้ admin เพิกถอนใบรับรองก่อน</p>' : '') + '</div>' +
+        '<div class="row g-3"><div class="col-12 col-sm-6"><label class="ex-lbl">สถานะใบงานในระบบ (Job Status)<select name="status" class="ex-in mt-1"' + (locked ? ' disabled' : '') + '>' +
+          opt('in_progress', 'กำลังตรวจวิเคราะห์ (In Progress)') + opt('completed', 'เสร็จสิ้นสมบูรณ์ (Completed)') + opt('pending', 'รอดำเนินการ (Pending)') + '</select></label></div>' +
+          '<div class="col-12 col-sm-6"><label class="ex-lbl">แนบภาพซูมเพิ่มเติม (Staff Detail Photo)<input type="file" name="photos" accept="image/*" multiple class="ex-in mt-1" style="padding:.5rem"' + (j.booking_id ? '' : ' disabled') + '></label></div></div>' +
+        '<label class="ex-lbl">บันทึกข้อสรุปการตรวจวิเคราะห์ของผู้เชี่ยวชาญ (Expert Inspection Notes)<textarea name="expert_instruction" rows="3" maxlength="2000" class="ex-in mt-1" placeholder="บันทึกรายละเอียดจุดตรวจ เช่น ฝีเข็มเย็บ, โลโก้ปั๊ม, Date Code, หัวซิป">' + TL.esc(form.expert_instruction) + '</textarea></label>' +
+        '<button class="ex-submit" id="submitBtn">' + TL.icon('check') + ' บันทึกผลการตรวจ &amp; ออกใบรับรอง</button>' +
+      '</form></div>';
+  }
+
+  function select(id) {
+    const j = jobs.find(x => x.id === id); if (!j) return;
+    selectedId = id;
+    form = { result: j.result || 'pending', status: j.status === 'pending' ? 'in_progress' : j.status, tag_code: j.tag_code || '',
+             expert_source: j.expert_source || '', expert_instruction: j.expert_instruction || '' };
+    renderList(); renderBench();
+  }
+
+  async function load(keep) {
+    try {
+      jobs = (await TL.api(ROWS)).data;
+      document.getElementById('errorBox').hidden = true;
+      if (keep && jobs.some(j => j.id === selectedId)) select(selectedId);
+      else if (jobs.length) select(jobs[0].id);
+      else { selectedId = null; renderList(); renderBench(); }
+    } catch (err) {
+      const box = document.getElementById('errorBox'); box.hidden = false; box.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+      list.innerHTML = '';
+    }
+  }
+
+  list.addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) select(Number(b.dataset.id)); });
+  document.getElementById('chips').addEventListener('click', e => { const c = e.target.closest('[data-status]'); if (c) { filter = c.dataset.status; renderList(); } });
+  document.getElementById('search').addEventListener('input', renderList);
+  document.getElementById('reloadBtn').addEventListener('click', () => load(true));
+
+  bench.addEventListener('click', e => {
+    const r = e.target.closest('[data-result]'); if (r) { syncForm(); form.result = r.dataset.result; renderBench(); return; }
+    const z = e.target.closest('[data-zoom]'); if (z) openLightbox(z.dataset.zoom);
+  });
+  function syncForm() {
+    const f = document.getElementById('benchForm'); if (!f) return;
+    ['tag_code', 'expert_source', 'expert_instruction', 'status'].forEach(n => { form[n] = f.elements[n].value; });
+  }
+  bench.addEventListener('submit', async e => {
+    e.preventDefault(); syncForm();
+    const j = jobs.find(x => x.id === selectedId), f = e.target, btn = document.getElementById('submitBtn');
+    if (form.status === 'completed' && form.result === 'pending') { TL.toast('กรุณาเลือกผลการตรวจก่อนปิดงาน', 'error'); return; }
+    TL.busy(btn, true);
+    try {
+      const files = Array.from(f.elements.photos.files || []);
+      if (files.length) {
+        const data = []; for (const file of files) data.push(await TL.readImage(file));
+        await TL.api(BO + 'bookings/' + j.booking_id + '/photos/', { method: 'POST', body: { photos: data } });
+      }
+      const body = { tag_code: form.tag_code, expert_source: form.expert_source, expert_instruction: form.expert_instruction };
+      if (!j.certificate_code) { body.status = form.status; body.result = form.result; }
+      const res = await TL.api(BO + 'jobs/' + j.id + '/result/', { method: 'POST', body: body });
+      TL.toast(res.data.certificate_code && !j.certificate_code ? res.message + ' • ออกใบรับรอง ' + res.data.certificate_code : res.message);
+      await load(true);
+    } catch (err) { TL.toast(err.message, 'error'); TL.busy(btn, false); }
+  });
+
+  // Lightbox with zoom (buttons or mouse wheel) and rotate.
+  const lb = document.getElementById('lightbox'), img = document.getElementById('lbImg');
+  let zoom = 1, rot = 0;
+  const paint = () => { img.style.transform = 'scale(' + zoom + ') rotate(' + rot + 'deg)';
+    document.getElementById('lbZoom').textContent = Math.round(zoom * 100) + '%';
+    document.getElementById('lbRot').textContent = (((rot % 360) + 360) % 360) + '°'; };
+  const step = d => { zoom = Math.min(4, Math.max(0.5, Math.round((zoom + d) * 100) / 100)); paint(); };
+  function openLightbox(url) { img.src = url; zoom = 1; rot = 0; paint(); lb.hidden = false; document.body.style.overflow = 'hidden'; }
+  function closeLightbox() { lb.hidden = true; img.removeAttribute('src'); document.body.style.overflow = ''; }
+  lb.addEventListener('click', e => {
+    const b = e.target.closest('[data-lb]'); if (!b) return;
+    ({ in: () => step(0.25), out: () => step(-0.25), left: () => { rot -= 90; paint(); }, right: () => { rot += 90; paint(); },
+       reset: () => { zoom = 1; rot = 0; paint(); }, close: closeLightbox })[b.dataset.lb]();
+  });
+  document.getElementById('lbStage').addEventListener('wheel', e => { e.preventDefault(); step(e.deltaY < 0 ? 0.25 : -0.25); }, { passive: false });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) closeLightbox(); });
+
+  load(false);
+})();
+</script>
+{% endblock %}

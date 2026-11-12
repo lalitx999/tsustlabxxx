@@ -26,7 +26,7 @@ ICONS = [
     'zap', 'globe', 'lock', 'copy', 'send', 'building-2', 'handshake', 'house',
     'message-circle', 'funnel', 'ban', 'rotate-ccw', 'banknote', 'percent',
     'cookie', 'star', 'chevron-up', 'circle-check-big', 'shield', 'chart-line', 'monitor',
-    'database', 'image-off', 'link-2',
+    'database', 'image-off', 'link-2', 'zoom-in', 'zoom-out', 'rotate-cw',
 ]
 
 
