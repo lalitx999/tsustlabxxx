@@ -1,7 +1,8 @@
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.utils import timezone
 
-from apps.inspections.models import Certificate, Job
+from apps.bookings.models import BookingPhoto
+from apps.inspections.models import Certificate, CertificateSendLog, Job
 
 JOB_RELATED = ('customer', 'booking__branch', 'certificate', 'result_recorded_by')
 
@@ -51,6 +52,34 @@ def find_certificate(code_or_id):
                 if cert:
                     return cert
     return base.filter(pk=int(value)).first() if value.isdigit() else None
+
+
+def certificate_detail(code_or_id):
+    """Everything the certificate detail page shows, in a fixed number of queries."""
+    cert = find_certificate(code_or_id)
+    if not cert:
+        return None
+    return (Certificate.objects
+            .select_related('job__customer', 'job__booking__branch', 'job__result_recorded_by')
+            .prefetch_related(
+                Prefetch('job__booking__photos', queryset=BookingPhoto.objects.order_by('uploaded_at', 'pk')),
+                Prefetch('send_logs', queryset=CertificateSendLog.objects.order_by('-sent_at')))
+            .get(pk=cert.pk))
+
+
+def certificate_photos(cert: Certificate) -> list[dict]:
+    """All photos of the job's booking, marking which are on the certificate and in what order.
+
+    With nothing chosen yet, the PDF uses the first 3 staff photos (or the first 3 of any), so show the same.
+    """
+    booking = cert.job.booking
+    photos = list(booking.photos.all()) if booking else []
+    chosen = [pid for pid in (cert.selected_photos or []) if any(p.pk == pid for p in photos)]
+    if not chosen:
+        staff = [p.pk for p in photos if p.photo_type == 'staff']
+        chosen = (staff or [p.pk for p in photos])[:3]
+    return [{'id': p.pk, 'url': p.photo.url if p.photo else '', 'source': p.photo_type,
+             'order': chosen.index(p.pk) + 1 if p.pk in chosen else 0} for p in photos]
 
 
 def certificate_list(*, query=None, status=None, limit=300):

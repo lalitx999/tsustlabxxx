@@ -1,0 +1,325 @@
+{% extends 'backoffice/layout.html' %}
+{% load static ui %}
+{% block content %}
+{% with status=cert.cert_status result=job.result %}
+<div class="d-grid gap-4 cd-page">
+  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-sm-between gap-3 pb-2 border-bottom border-n200">
+    <div>
+      <h1 class="bo-h1 text-uppercase">Certificate Detail</h1>
+      <div class="cd-crumb"><a href="{% url 'backoffice:certificates' %}">Certificate</a><span>&gt;</span><b>{{ cert.cert_code }}</b></div>
+    </div>
+    <div class="cd-actions d-flex flex-wrap gap-2">
+      <button type="button" class="bo-btn" data-pdf>{% icon 'printer' %} พิมพ์ใบเซอร์</button>
+      <button type="button" class="bo-btn" data-pdf>{% icon 'download' %} ดาวน์โหลด PDF</button>
+      <button type="button" class="bo-btn dark" data-send-open>{% icon 'send' %} ส่งให้ลูกค้า</button>
+    </div>
+  </div>
+
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-xl-8 d-grid gap-4">
+
+      {# Certificate summary #}
+      <div class="cd-card d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="cd-seal">{% icon 'check' %}<span>CERTIFIED</span></div>
+          <div class="d-grid gap-1">
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-n400 text-uppercase" style="font-size:10px">Certificate ID</span>
+              {% if status == 'revoked' %}<span class="cd-tag bad">ระงับใช้งาน</span>{% elif status == 'expired' %}<span class="cd-tag warn">หมดอายุ</span>{% else %}<span class="cd-tag ok">ออกใบแล้ว</span>{% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-1" id="codeView">
+              <h2 class="cd-code">{{ cert.cert_code }}</h2>
+              <button type="button" class="cd-icon-btn" data-copy="{{ cert.cert_code }}" title="คัดลอกเลขใบเซอร์" aria-label="คัดลอกเลขใบเซอร์">{% icon 'copy' %}</button>
+              <button type="button" class="cd-icon-btn" id="codeEditBtn" title="แก้ไขเลขใบเซอร์" aria-label="แก้ไขเลขใบเซอร์">{% icon 'pencil' %}</button>
+            </div>
+            <form class="d-flex flex-wrap align-items-center gap-2" id="codeForm" hidden>
+              <input name="cert_code" class="bo-in mt-0 text-uppercase fw-black" style="min-width:200px" value="{{ cert.cert_code }}" maxlength="50" aria-label="เลขใบเซอร์ใหม่" required>
+              <button class="bo-btn dark">{% icon 'check' %} บันทึก</button>
+              <button type="button" class="bo-btn" id="codeCancel">{% icon 'x' %} ยกเลิก</button>
+            </form>
+            <div class="d-flex align-items-center gap-1 pt-1" style="font-size:11px">
+              <span class="text-n500 fw-medium">Status</span>
+              {% if status == 'revoked' %}<span class="cd-tag bad">ระงับ (Revoked)</span>
+              {% elif status == 'expired' %}<span class="cd-tag warn">หมดอายุ (Expired)</span>
+              {% elif result == 'fake' or status == 'unauthentic' %}<span class="cd-tag bad">ปลอม (Fake)</span>
+              {% elif result == 'inconclusive' %}<span class="cd-tag warn">ตรวจสอบไม่ได้ (Inconclusive)</span>
+              {% else %}<span class="cd-tag ok">แท้ (Authentic)</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="cd-meta pt-3 pt-md-0 border-top border-md-0">
+          <div>{% icon 'database' %}<div><small>Job ID</small><b>{{ job.display_id }}</b></div></div>
+          <div>{% icon 'calendar' %}<div><small>วันที่ออกใบเซอร์</small><b>{{ cert.created_at|date:"d/m/Y H:i" }}</b></div></div>
+          <div>{% icon 'user' %}<div><small>ผู้เชี่ยวชาญผู้ตรวจ</small><b>{{ expert }}</b></div></div>
+          <div>{% icon 'map-pin' %}<div><small>สาขาที่ตรวจ</small><b>{{ booking.branch.name|default:"-" }}</b></div></div>
+        </div>
+      </div>
+
+      {# Product + certificate photos #}
+      <div class="cd-card">
+        <h3 class="cd-h">ข้อมูลสินค้า</h3>
+        <div class="row g-4 align-items-start">
+          <div class="col-12 col-md-4">
+            <div class="cd-main-photo" id="mainPhoto"></div>
+          </div>
+          <div class="col-12 col-md-8">
+            <div class="cd-spec">
+              <div><span class="k">ประเภทสินค้า</span><span class="v">{{ job.category|default:"-" }}</span></div>
+              <div><span class="k">Serial Number</span><span class="v font-monospace">{{ job.serial_number|default:"-" }}</span></div>
+              <div><span class="k">แบรนด์</span><span class="v text-uppercase fw-black">{{ job.brand|default:"-" }}</span></div>
+              <div><span class="k">Tag Code</span><span class="v font-monospace">{{ job.tag_code|default:"-" }}</span></div>
+              <div><span class="k">รุ่น / Model</span><span class="v fw-black">{{ job.model|default:"-" }}</span></div>
+              <div><span class="k">อุปกรณ์ที่มี (ถ้ามี)</span><span class="v">{{ job.accessories|default:"-" }}</span></div>
+              <div><span class="k">สี</span><span class="v">{{ job.color|default:"-" }}</span></div>
+              <div><span class="k">หมายเหตุเพิ่มเติม</span><span class="v">{{ job.notes|default:"-" }}</span></div>
+              <div style="grid-column:1/-1"><span class="k">วัสดุ</span><span class="v">{{ job.material|default:"-" }}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="pt-3 mt-4 border-top border-n100 d-grid gap-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="bo-lbl mb-0">รูปภาพสินค้าใบรับรอง (เลือกเรียงลำดับได้สูงสุด {{ max_photos }} ภาพ)</span>
+            {% if can_select_photos %}<button type="button" class="bo-btn-xs" id="savePhotos">บันทึกการจัดเรียงรูปภาพใบรับรอง</button>{% endif %}
+          </div>
+          <div class="cd-thumbs" id="thumbs"></div>
+        </div>
+      </div>
+
+      {# Result + service #}
+      <div class="row g-4">
+        <div class="col-12 col-md-6">
+          {% if status == 'revoked' %}
+          <div class="cd-result bad h-100"><h3 class="cd-h" style="border-color:rgba(254,202,202,.5)">ผลการตรวจสอบ</h3>
+            <div class="d-flex gap-3"><span class="dot">{% icon 'x' %}</span><div><h4>ถูกระงับ (Revoked)</h4><p>ใบรับรองฉบับนี้ถูกระงับและยกเลิกสิทธิ์การใช้งานแล้ว{% if cert.revoke_reason %} — {{ cert.revoke_reason }}{% endif %}</p></div></div></div>
+          {% elif result == 'fake' or status == 'unauthentic' %}
+          <div class="cd-result bad h-100"><h3 class="cd-h" style="border-color:rgba(254,202,202,.5)">ผลการตรวจสอบ</h3>
+            <div class="d-flex gap-3"><span class="dot">{% icon 'x' %}</span><div><h4>NOT AUTHENTICATED — ไม่ผ่านเกณฑ์การรับรองว่าเป็นของแท้</h4><p>ไม่ผ่านเกณฑ์การรับรองความแท้ตามมาตรฐานของแบรนด์และฐานข้อมูลอ้างอิงของห้องปฏิบัติการ</p></div></div></div>
+          {% elif result == 'inconclusive' %}
+          <div class="cd-result warn h-100"><h3 class="cd-h" style="border-color:rgba(253,230,138,.5)">ผลการตรวจสอบ</h3>
+            <div class="d-flex gap-3"><span class="dot">{% icon 'triangle-alert' %}</span><div><h4>UNABLE TO AUTHENTICATE — ยังสรุปผลจากภาพที่ส่งมาไม่ได้</h4><p>รายละเอียดหรือภาพถ่ายที่ได้รับยังไม่เพียงพอต่อการสรุปผล</p></div></div></div>
+          {% else %}
+          <div class="cd-result ok h-100"><h3 class="cd-h" style="border-color:rgba(167,243,208,.5)">ผลการตรวจสอบ</h3>
+            <div class="d-flex gap-3"><span class="dot">{% icon 'check' %}</span><div><h4>AUTHENTIC — ประเมินจากภาพว่าเป็นของแท้</h4><p>จากการตรวจวิเคราะห์และเปรียบเทียบกับข้อมูลอ้างอิงของแบรนด์ สินค้าชิ้นนี้ผ่านเกณฑ์การรับรองว่าเป็นของแท้</p></div></div></div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="cd-card h-100">
+            <h3 class="cd-h">รายการบริการ</h3>
+            <div class="cd-price">
+              <div><span class="fw-medium">{{ package_name }}</span><span class="font-monospace text-n900">{{ price.service_amount_before_discount|default:job.price|baht }} THB</span></div>
+              {% if price.promo_discount_amount and price.promo_discount_amount != '0.00' %}<div style="color:#dc2626"><span>ส่วนลดโปรโมชั่น{% if price.promo_code %} ({{ price.promo_code }}){% endif %}</span><span class="font-monospace">−{{ price.promo_discount_amount|baht }} THB</span></div>{% endif %}
+              {% if price.member_discount_amount and price.member_discount_amount != '0.00' %}<div style="color:#dc2626"><span>ส่วนลดสมาชิก{% if price.member_tier %} ({{ price.member_tier }}){% endif %}</span><span class="font-monospace">−{{ price.member_discount_amount|baht }} THB</span></div>{% endif %}
+              {% if price.shipping_fee and price.shipping_fee != '0.00' %}<div><span>ค่าจัดส่งพัสดุคืน</span><span class="font-monospace text-n900">{{ price.shipping_fee|baht }} THB</span></div>{% endif %}
+              <div class="total"><span>รวมทั้งหมด</span><span class="font-monospace">{{ price.total|default:job.price|baht }} THB</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Timeline #}
+      <div class="cd-card">
+        <h3 class="cd-h">สถานะงาน</h3>
+        <div class="cd-steps">
+          {% for step in timeline %}
+          <div class="cd-step{% if step.done %} done{% endif %}{% if step.final and status == 'revoked' %} revoked{% endif %}">
+            <div class="ic">{% if step.final %}{% if status == 'revoked' %}{% icon 'x' %}{% else %}{% icon 'file-text' %}{% endif %}{% elif step.done %}{% icon 'check' %}{% else %}<span style="width:6px;height:6px;border-radius:50%;background:var(--n400)"></span>{% endif %}</div>
+            <p>{{ step.label }}</p><small>{% if step.date %}{{ step.date|date:"d/m/Y H:i" }}{% else %}-{% endif %}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-4 d-grid gap-4 cd-side">
+      {# Preview #}
+      <div class="cd-card sm">
+        <h4 class="cd-h muted">ตัวอย่างใบเซอร์ (Preview)</h4>
+        <div class="cd-preview">
+          {% if status == 'revoked' %}<div class="wm revoked">REVOKED / CANCELLED</div>{% elif status == 'expired' %}<div class="wm expired">EXPIRED</div>{% endif %}
+          <img src="{% static 'img/logo-trust-lab.png' %}" alt="Trust Lab" style="height:1.75rem;object-fit:contain">
+          <span class="d-block text-n400 text-uppercase fw-bold" style="font-size:5px;letter-spacing:.1em">VERIFY • INSPECT • ASSURE</span>
+          <span class="d-block fw-black text-uppercase text-n900" style="font-size:9px;letter-spacing:.05em">CERTIFICATE</span>
+          <span class="d-block fw-extrabold text-uppercase" style="font-size:7px">OF AUTHENTICITY</span>
+          <div class="ph" id="previewPhoto"></div>
+          <dl>
+            <dt>CERTIFICATE ID</dt><dd>{{ cert.cert_code }}</dd>
+            <dt>BRAND</dt><dd class="text-uppercase">{{ job.brand|default:"-" }}</dd>
+            <dt>MODEL</dt><dd>{{ job.model|default:"-" }}</dd>
+            <dt>SERIAL NUMBER</dt><dd class="font-monospace">{{ job.serial_number|default:"-" }}</dd>
+            <dt>CATEGORY</dt><dd>{{ job.category|default:"-" }}</dd>
+            <dt>INSPECTION DATE</dt><dd>{{ cert.created_at|date:"d/m/Y" }}</dd>
+            <dt>VALID UNTIL</dt><dd>{{ cert.expires_at|date:"d/m/Y"|default:"-" }}</dd>
+          </dl>
+          <div class="d-flex justify-content-between align-items-end mt-2 pt-2 border-top border-n100">
+            <span class="text-n400" style="font-size:6px">www.trustlabthailand.com</span>
+            <img src="{% url 'website:qr_image' %}?text={{ verify_url|urlencode }}" alt="QR" width="44" height="44">
+          </div>
+        </div>
+      </div>
+
+      {# Controls #}
+      <div class="cd-card sm d-grid gap-2">
+        <h4 class="cd-h muted mb-1">จัดการใบเซอร์</h4>
+        <button type="button" class="bo-btn" data-pdf>{% icon 'printer' %} พิมพ์ใบเซอร์</button>
+        <button type="button" class="bo-btn" data-pdf>{% icon 'download' %} ดาวน์โหลด PDF</button>
+        <button type="button" class="bo-btn" data-send-open>{% icon 'send' %} ส่งให้ลูกค้า (Email / Line)</button>
+        <button type="button" class="bo-btn" data-copy="{{ verify_url }}">{% icon 'link-2' %} คัดลอกลิงก์ตรวจสอบ</button>
+        {% if bo_is_admin %}
+          {% if status != 'revoked' and status != 'expired' %}<button type="button" class="bo-btn warn mt-2" data-act="expire">{% icon 'calendar' %} เปลี่ยนสถานะเป็นหมดอายุ</button>{% endif %}
+          {% if status != 'revoked' %}<button type="button" class="bo-btn bad" data-act="revoke">{% icon 'ban' %} ระงับใบเซอร์ (Revoke)</button>{% endif %}
+        {% endif %}
+      </div>
+
+      {# Send history #}
+      <div class="cd-card sm">
+        <h4 class="cd-h muted">ประวัติการส่งใบเซอร์</h4>
+        {% for log in send_logs %}
+        <div class="cd-log">
+          <div class="ic">{% if log.method == 'line' %}{% icon 'message-circle' %}{% else %}{% icon 'mail' %}{% endif %}</div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex justify-content-between gap-2" style="font-size:11px"><span class="text-n500">ส่งให้ลูกค้า ({% if log.method == 'line' %}LINE{% else %}Email{% endif %})</span><span class="text-n900 text-break">{{ log.recipient }}</span></div>
+            <p class="mb-0 text-n400 fw-light" style="font-size:9px">{{ log.sent_at|date:"d/m/Y H:i" }} น.</p>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-n400 fw-normal py-2 mb-0" style="font-size:10px">ยังไม่มีประวัติการส่งใบเซอร์ให้ลูกค้า</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade bo-modal" id="sendModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form class="modal-body" id="sendForm">
+    <div class="d-flex justify-content-between align-items-center pb-3 border-bottom border-n100">
+      <h3 class="text-sm fw-black text-n900 text-uppercase mb-0 d-flex align-items-center gap-2">{% icon 'send' %} ส่งใบรับรองให้ลูกค้า</h3>
+      <button type="button" class="bo-modal-x" data-bs-dismiss="modal" aria-label="Close">{% icon 'x' %}</button>
+    </div>
+    <div class="bo-detail">
+      <span class="bo-lbl mb-0">ข้อมูลติดต่อลูกค้า (Customer Details)</span>
+      <div><span class="k">ชื่อลูกค้า:</span><span class="v">{{ customer.full_name }}</span></div>
+      <div><span class="k">เบอร์โทรศัพท์:</span><span class="v">{{ customer.phone_number|default:"-" }}</span></div>
+      <div><span class="k">อีเมลลูกค้า:</span><span class="v">{{ customer.email|default:"-" }}</span></div>
+      <div><span class="k">Line ID:</span><span class="v">{{ customer.line_id|default:"-" }}</span></div>
+    </div>
+    <div>
+      <span class="bo-lbl">ช่องทางการจัดส่ง</span>
+      <div class="d-flex gap-2">
+        <label class="bo-btn flex-fill justify-content-center"><input type="radio" name="method" value="email" checked class="me-1"> Email</label>
+        <label class="bo-btn flex-fill justify-content-center"><input type="radio" name="method" value="line" class="me-1"> LINE</label>
+      </div>
+    </div>
+    <label class="bo-lbl mb-0" id="recipientLabel">อีเมลผู้รับ
+      <input name="recipient" class="bo-in" value="{{ customer.email|default:'' }}" placeholder="name@example.com" maxlength="255">
+    </label>
+    <div class="d-flex gap-2 justify-content-end">
+      <button type="button" class="bo-btn" data-bs-dismiss="modal">ยกเลิก</button>
+      <button class="bo-btn dark" id="sendBtn">{% icon 'send' %} ส่งใบรับรอง</button>
+    </div>
+  </form></div></div>
+</div>
+{% endwith %}
+{{ photos|json_script:"cert-photos" }}
+{% endblock %}
+{% block page_scripts %}
+<script>
+(function () {
+  const URL_BASE = '{% url "backoffice:home" %}certificates/{{ cert.cert_code|urlencode }}/';
+  const PHOTO_ADD = '{% url "backoffice:booking_photos_add" job.booking_id|default:0 %}';
+  const CAN_SELECT = {{ can_select_photos|yesno:'true,false' }}, MAX = {{ max_photos }}, HAS_BOOKING = {{ booking|yesno:'true,false' }};
+  let photos = JSON.parse(document.getElementById('cert-photos').textContent);
+  let chosen = photos.filter(p => p.order).sort((a, b) => a.order - b.order).map(p => p.id);
+  const reload = () => setTimeout(() => location.reload(), 600);
+  const call = async (path, body) => TL.api(URL_BASE + path, { method: 'POST', body: body || {} });
+  const noImg = '<div class="cd-noimg">' + TL.icon('image-off') + '<span>ยังไม่มีรูปถ่ายสินค้า</span></div>';
+
+  function paintMain() {
+    const first = photos.find(p => p.id === chosen[0]);
+    document.getElementById('mainPhoto').innerHTML = first && first.url ? '<img src="' + TL.esc(first.url) + '" alt="รูปสินค้า">' : noImg;
+    document.getElementById('previewPhoto').innerHTML = first && first.url ? '<img src="' + TL.esc(first.url) + '" alt="">' : TL.icon('image-off');
+  }
+  function paintThumbs() {
+    const box = document.getElementById('thumbs');
+    box.innerHTML = (photos.length ? '' : '<div class="d-flex align-items-center gap-2 text-n400 fw-medium" style="font-size:11px">' + TL.icon('image-off') + ' ยังไม่มีรูปภาพในงานนี้</div>') +
+      photos.map(p => { const i = chosen.indexOf(p.id);
+        return '<button type="button" class="cd-thumb' + (i >= 0 ? ' on' : '') + '" data-photo="' + p.id + '"' + (CAN_SELECT ? '' : ' disabled') + ' aria-pressed="' + (i >= 0) + '">' +
+          (p.url ? '<img src="' + TL.esc(p.url) + '" alt="">' : '') + '<span class="src">' + (p.source === 'customer' ? 'C' : 'S') + '</span>' +
+          (i >= 0 ? '<span class="no">' + (i + 1) + '</span>' : '') + '</button>'; }).join('') +
+      (CAN_SELECT && HAS_BOOKING ? '<label class="cd-thumb-add">' + TL.icon('plus') + '<span>เพิ่มรูป</span><input type="file" accept="image/*" multiple hidden id="photoInput"></label>' : '');
+    const input = document.getElementById('photoInput');
+    if (input) input.addEventListener('change', upload);
+    const save = document.getElementById('savePhotos'); if (save) save.disabled = !chosen.length;
+    paintMain();
+  }
+  document.getElementById('thumbs').addEventListener('click', e => {
+    const t = e.target.closest('[data-photo]'); if (!t || !CAN_SELECT) return;
+    const id = Number(t.dataset.photo), i = chosen.indexOf(id);
+    if (i >= 0) chosen.splice(i, 1);
+    else if (chosen.length >= MAX) { TL.toast('สามารถเลือกรูปภาพได้สูงสุด ' + MAX + ' ภาพเท่านั้น', 'error'); return; }
+    else chosen.push(id);
+    paintThumbs();
+  });
+  async function upload(e) {
+    const files = Array.from(e.target.files || []); if (!files.length) return;
+    try {
+      const data = []; for (const f of files) data.push(await TL.readImage(f));
+      const res = await TL.api(PHOTO_ADD, { method: 'POST', body: { photos: data } });
+      TL.toast(res.message);
+      res.data.forEach(p => photos.push({ id: p.id, url: p.url, source: 'staff', order: 0 }));
+      paintThumbs();
+    } catch (err) { TL.toast(err.message, 'error'); }
+  }
+  const saveBtn = document.getElementById('savePhotos');
+  if (saveBtn) saveBtn.addEventListener('click', async () => {
+    TL.busy(saveBtn, true);
+    try { TL.toast((await call('photos/', { photo_ids: chosen })).message); } catch (err) { TL.toast(err.message, 'error'); }
+    TL.busy(saveBtn, false);
+  });
+
+  document.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', async () => {
+    const win = window.open('about:blank', '_blank');
+    TL.busy(b, true);
+    try { const r = await call('pdf/'); const url = await TL.waitForFile(r.data.status_url); if (win) win.location = url; else window.open(url, '_blank'); }
+    catch (err) { if (win) win.close(); TL.toast(err.message, 'error'); }
+    TL.busy(b, false);
+  }));
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); TL.toast('คัดลอกแล้ว'); } catch (err) { prompt('คัดลอกข้อความนี้', b.dataset.copy); }
+  }));
+
+  const codeView = document.getElementById('codeView'), codeForm = document.getElementById('codeForm');
+  document.getElementById('codeEditBtn').addEventListener('click', () => { codeView.hidden = true; codeForm.hidden = false; codeForm.cert_code.focus(); });
+  document.getElementById('codeCancel').addEventListener('click', () => { codeForm.hidden = true; codeView.hidden = false; });
+  codeForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    try { const r = await call('code/', { cert_code: codeForm.cert_code.value }); TL.toast(r.message); setTimeout(() => { location.href = '{% url "backoffice:certificates" %}' + encodeURIComponent(r.data.code) + '/'; }, 600); }
+    catch (err) { TL.toast(err.message, 'error'); }
+  });
+
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
+    try {
+      if (b.dataset.act === 'expire') { if (!confirm('เปลี่ยนสถานะใบรับรองนี้เป็นหมดอายุ?')) return; TL.toast((await call('expire/')).message); }
+      if (b.dataset.act === 'revoke') { const reason = prompt('เหตุผลการระงับใบรับรอง', 'Revoked by administrator'); if (!reason) return; TL.toast((await call('revoke/', { reason: reason })).message); }
+      reload();
+    } catch (err) { TL.toast(err.message, 'error'); }
+  }));
+
+  const sendModal = new bootstrap.Modal(document.getElementById('sendModal')), sendForm = document.getElementById('sendForm');
+  document.querySelectorAll('[data-send-open]').forEach(b => b.addEventListener('click', () => sendModal.show()));
+  sendForm.querySelectorAll('[name=method]').forEach(r => r.addEventListener('change', () => {
+    const line = sendForm.method.value === 'line', input = sendForm.recipient;
+    document.getElementById('recipientLabel').firstChild.textContent = line ? 'LINE User ID ผู้รับ' : 'อีเมลผู้รับ';
+    input.placeholder = line ? 'LINE User ID' : 'name@example.com';
+    input.value = line ? '' : '{{ customer.email|default:""|escapejs }}';
+  }));
+  sendForm.addEventListener('submit', async e => {
+    e.preventDefault(); const btn = document.getElementById('sendBtn'); TL.busy(btn, true);
+    try { const r = await call('send/', { method: sendForm.method.value, recipient: sendForm.recipient.value }); TL.toast(r.message); sendModal.hide(); reload(); }
+    catch (err) { TL.toast(err.message, 'error'); }
+    TL.busy(btn, false);
+  });
+
+  paintThumbs();
+})();
+</script>
+{% endblock %}

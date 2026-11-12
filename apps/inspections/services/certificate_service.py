@@ -91,14 +91,24 @@ def expire(cert: Certificate, actor) -> Certificate:
     return cert
 
 
-def select_photos(cert: Certificate, photo_ids) -> Certificate:
+MAX_CERT_PHOTOS = 3  # the PDF has one main photo and two small ones
+
+
+def select_photos(cert: Certificate, photo_ids, actor=None) -> Certificate:
+    """Choose (in order) which booking photos appear on the certificate."""
     try:
-        ids = [int(pid) for pid in photo_ids]
+        ids = list(dict.fromkeys(int(pid) for pid in photo_ids))
     except (TypeError, ValueError):
         raise ServiceError('รหัสรูปภาพไม่ถูกต้อง')
     allowed = set(cert.job.booking.photos.values_list('pk', flat=True)) if cert.job.booking_id else set()
-    cert.selected_photos = [pid for pid in ids if pid in allowed][:6]
+    chosen = [pid for pid in ids if pid in allowed]
+    if not chosen:
+        raise ServiceError('กรุณาเลือกรูปภาพอย่างน้อย 1 ภาพ')
+    if len(chosen) > MAX_CERT_PHOTOS:
+        raise ServiceError(f'เลือกรูปภาพได้สูงสุด {MAX_CERT_PHOTOS} ภาพเท่านั้น')
+    cert.selected_photos = chosen
     cert.save(update_fields=['selected_photos', 'updated_at'])
+    record_event(actor, 'certificate_photos_selected', job=cert.job, photo_ids=chosen)
     return cert
 
 

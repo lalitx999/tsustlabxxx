@@ -42,6 +42,7 @@ urlpatterns = [
 
     # Certificates
     path('auth/certificates/', jobs.certificates, name='certificates'),
+    path('auth/certificates/<str:code>/', jobs.certificate_detail, name='certificate_detail'),
     path('certificates/rows/', jobs.certificate_rows, name='certificate_rows'),
     path('certificates/issue/', jobs.certificate_issue, name='certificate_issue'),
     path('certificates/<str:pk>/code/', jobs.certificate_code, name='certificate_code'),

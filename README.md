@@ -92,5 +92,4 @@ DATABASE_URL=postgres:///trustlab python manage.py migrate --fake-initial
 - แอปกล้อง `trustlabcam` แบบเต็มจอ และหน้า POS display สำหรับลูกค้า (ตอนนี้ถ่าย/อัปโหลดรูปได้จาก modal งานใน Job List)
 - หน้าผู้เชี่ยวชาญแยก (`/authenzs/expert/jobs`) — ตอนนี้ผู้เชี่ยวชาญใช้ Job List ร่วมกัน
 - เข้าสู่ระบบด้วย LINE, ตรวจสลิปอัตโนมัติ EasySlip
-- หน้าเลือกรูปที่จะแสดงบนใบรับรอง (มี service แล้ว ยังไม่มีหน้าจอ)
 - เนื้อหาหน้า about/services แบบเต็มทุกย่อหน้า และคำแปลภาษาอังกฤษของหน้าภายใน

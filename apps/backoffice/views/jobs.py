@@ -1,4 +1,6 @@
 """Job list, expert inspection, shipping, photos and certificates."""
+from django.conf import settings
+from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
@@ -7,7 +9,7 @@ from apps.accounts.selectors.user_selector import experts
 from apps.bookings.selectors.booking_selector import photo_urls
 from apps.core.decorators import ajax_view, reply, role_required
 from apps.core.exceptions import ServiceError
-from apps.core.permissions import ADMIN_ROLES, FRONT_DESK_ROLES, INSPECTOR_ROLES, STAFF_ROLES
+from apps.core.permissions import ADMIN_ROLES, FRONT_DESK_ROLES, INSPECTOR_ROLES, STAFF_ROLES, has_role
 from apps.core.utils import parse_pk
 from apps.inspections.selectors import job_selector
 from apps.inspections.services import certificate_service, job_service, photo_service, shipping_service
@@ -111,6 +113,46 @@ def certificates(request):
     return render(request, 'backoffice/certificates.html', {'title': 'Certificate'})
 
 
+PACKAGE_NAMES = {'cert_15d': 'ตรวจสอบสินค้า + ใบรับรอง 15 วัน', 'cert_90d': 'ตรวจสอบสินค้า + ใบรับรอง 90 วัน',
+                 'photo_review': 'Photo Review'}
+
+
+def _timeline(cert, job, booking):
+    paid = job.payment_status == 'paid' or (booking and booking.payment_status == 'paid')
+    started = job.status in ('in_progress', 'completed')
+    done = job.status == 'completed'
+    created = booking.created_at if booking else job.created_at
+    return [
+        {'label': 'สร้างงาน', 'date': created, 'done': True},
+        {'label': 'รอการชำระเงิน', 'date': created, 'done': True},
+        {'label': 'ชำระเงินแล้ว', 'date': job.updated_at if paid else None, 'done': paid},
+        {'label': 'กำลังตรวจสอบ', 'date': job.updated_at if started else None, 'done': started},
+        {'label': 'ตรวจสอบเสร็จสิ้น', 'date': job.updated_at if done else None, 'done': done},
+        {'label': 'ใบรับรองถูกระงับ' if cert.cert_status == 'revoked' else 'ออกใบเซอร์แล้ว',
+         'date': cert.created_at, 'done': True, 'final': True},
+    ]
+
+
+@role_required(*STAFF_ROLES)
+@require_GET
+def certificate_detail(request, code):
+    cert = job_selector.certificate_detail(code)
+    if not cert:
+        raise Http404
+    job, booking = cert.job, cert.job.booking
+    snapshot = (booking.price_snapshot if booking else None) or job.price_snapshot or {}
+    verify_url = f"{settings.SITE_URL}{reverse('website:verify')}?id={cert.cert_code or cert.pk}"
+    return render(request, 'backoffice/certificate_detail.html', {
+        'title': 'Certificate Detail', 'cert': cert, 'job': job, 'booking': booking, 'customer': job.customer,
+        'photos': job_selector.certificate_photos(cert), 'send_logs': cert.send_logs.all(),
+        'expert': job.result_recorded_by.display_name if job.result_recorded_by else (job.expert_source or '-'),
+        'price': snapshot, 'package_name': PACKAGE_NAMES.get(job.service_package, job.service_package),
+        'timeline': _timeline(cert, job, booking), 'verify_url': verify_url,
+        'can_select_photos': has_role(request.user, INSPECTION_ROLES),
+        'max_photos': certificate_service.MAX_CERT_PHOTOS,
+    })
+
+
 @role_required(*STAFF_ROLES)
 @require_GET
 @ajax_view
@@ -176,7 +218,7 @@ def certificate_send(request, pk):
 @require_POST
 @ajax_view
 def certificate_photos(request, pk):
-    certificate_service.select_photos(_certificate(pk), request.json.get('photo_ids') or [])
+    certificate_service.select_photos(_certificate(pk), request.json.get('photo_ids') or [], request.user)
     return reply(message='บันทึกรูปบนใบรับรองแล้ว')
 
 
