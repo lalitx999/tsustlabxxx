@@ -1,0 +1,77 @@
+/* Receipts, tax invoices and intake slips. Copied from the old site's print pages (no web fonts: system Thai fonts only). */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'IBM Plex Sans Thai', 'Sukhumvit Set', Thonburi, 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.doc-toolbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: center; gap: 8px; padding: 10px; background: #111827; }
+.doc-toolbar button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #4b5563; border-radius: 8px; background: #fff; color: #111827; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.doc-toolbar button.ghost { background: transparent; color: #fff; }
+.doc-toolbar svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.doc-void { margin: 12px auto; max-width: 210mm; border: 2px solid #dc2626; color: #dc2626; border-radius: 8px; padding: 8px 12px; font-weight: 700; text-align: center; background: #fff; }
+
+/* 80mm slip */
+body.slip { font-size: 11px; background: #fff; }
+.slip-wrap { width: 302px; margin: 0 auto; padding: 12px; }
+.slip .center { text-align: center; }
+.slip .logo-text { font-size: 16px; font-weight: 800; letter-spacing: 2px; }
+.slip .sep { border-top: 1px dashed #aaa; margin: 8px 0; }
+.slip .row { display: flex; justify-content: space-between; gap: 8px; margin: 3px 0; }
+.slip .label { color: #555; }
+.slip .total-bar { background: #f3f4f6; color: #111827; border: 1px solid #d1d5db; border-top: 2px solid #111827; padding: 6px 8px; font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; margin-top: 8px; border-radius: 4px; }
+.slip .footer { font-size: 9px; color: #666; text-align: center; margin-top: 12px; }
+
+/* A4 tax invoice */
+body.a4 { background: #e5e7eb; }
+.page { background: #fff; width: 210mm; min-height: 297mm; margin: 20px auto; padding: 16mm 18mm; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,.1); border-radius: 2px; page-break-after: always; }
+.page:last-of-type { page-break-after: auto; }
+.top-corner { position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 70px 70px 0; border-color: transparent #111827 transparent transparent; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 14px; }
+.brand-title { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #111; }
+.brand-slogan { font-size: 7px; font-weight: 700; color: #6b7280; letter-spacing: 1.5px; }
+.company-details { font-size: 10px; color: #374151; line-height: 1.5; margin-top: 8px; }
+.invoice-title-block { text-align: right; margin-right: 20px; }
+.inv-main-title { font-size: 22px; font-weight: 800; color: #111; letter-spacing: 2px; }
+.inv-sub-title { font-size: 14px; font-weight: 700; color: #111; margin-top: -2px; }
+.inv-en-title { font-size: 8px; font-weight: 700; color: #6b7280; letter-spacing: 1px; margin-bottom: 8px; }
+.doc-meta-table { margin-left: auto; border-collapse: collapse; font-size: 10.5px; }
+.doc-meta-table td { padding: 2px 4px; color: #374151; text-align: left; }
+.doc-meta-table td:first-child { font-weight: 700; color: #4b5563; }
+.customer-box { display: flex; justify-content: space-between; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; gap: 16px; }
+.cust-label { font-size: 8.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.cust-name { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.cust-info { font-size: 10.5px; color: #374151; line-height: 1.5; }
+.items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.items-table thead tr { background: #f3f4f6; border-top: 1px solid #d1d5db; border-bottom: 1px solid #d1d5db; }
+.items-table th { padding: 8px 10px; font-size: 10px; font-weight: 700; color: #374151; text-transform: uppercase; }
+.items-table tbody tr { border-bottom: 1px solid #f3f4f6; }
+.items-table td { padding: 10px; font-size: 11px; color: #1f2937; vertical-align: middle; }
+.summary-wrapper { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 20px; }
+.baht-text-box { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.baht-text { font-size: 12px; font-weight: 700; color: #111827; background: #f3f4f6; padding: 8px 12px; border-radius: 6px; border-left: 4px solid #111827; margin-bottom: 10px; }
+.note-box { font-size: 10px; color: #4b5563; line-height: 1.5; background: #fffbeb; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b; }
+.calc-table { width: 290px; border-collapse: collapse; font-size: 11px; }
+.calc-table td { padding: 4px 0; color: #4b5563; }
+.calc-table td:last-child { color: #111827; font-weight: 600; text-align: right; }
+.grand-total-row td { background: #f3f4f6; color: #111827 !important; font-size: 13px; font-weight: 800; padding: 8px 10px; border: 1px solid #e5e7eb; border-top: 2px solid #111827; }
+.signatures-wrapper { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; }
+.sig-box { width: 180px; }
+.sig-line { border-bottom: 1px dashed #9ca3af; height: 45px; margin-bottom: 8px; }
+.sig-label { font-size: 10px; font-weight: 600; color: #374151; }
+.sig-date { font-size: 9px; color: #9ca3af; margin-top: 4px; }
+.thank-box { font-size: 11px; font-weight: 700; color: #111827; line-height: 1.4; text-align: left; }
+.thank-box span { font-size: 8px; color: #6b7280; letter-spacing: 1px; }
+.bottom-watermark { position: absolute; bottom: 12mm; left: 0; right: 0; text-align: center; font-size: 7.5px; font-weight: 700; color: #9ca3af; letter-spacing: 2px; }
+.void-stamp { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); font-size: 64px; font-weight: 800; color: rgba(220,38,38,.25); border: 6px solid rgba(220,38,38,.25); padding: 4px 24px; letter-spacing: 6px; pointer-events: none; }
+
+/* Intake slip (ใบรับสินค้า) */
+body.intake { background: #fff; font-size: 12px; }
+.intake-wrap { max-width: 148mm; margin: 0 auto; padding: 12mm 10mm; }
+.intake table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.intake td { padding-bottom: 4px; vertical-align: top; }
+.intake td.k { color: #555; width: 35%; }
+
+@media print {
+  .doc-toolbar, .doc-void { display: none !important; }
+  body.slip { width: 80mm; }
+  body.a4 { background: #fff; }
+  .page { margin: 0; width: 100%; min-height: 297mm; box-shadow: none; border-radius: 0; }
+}
+@page { margin: 0; }

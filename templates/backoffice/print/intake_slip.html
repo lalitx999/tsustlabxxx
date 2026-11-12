@@ -1,0 +1,27 @@
+{% extends 'backoffice/print/base.html' %}{% load ui %}
+{% block title %}ใบรับสินค้า {{ booking.display_id }}{% endblock %}
+{% block page_style %}<style>@page { size: A5; margin: 0; }</style>{% endblock %}
+{% block body_class %}intake{% endblock %}
+{% block content %}
+<div class="intake-wrap">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div><div style="font-size:22px;font-weight:bold;letter-spacing:.05em">TRUST LAB</div><div style="font-size:12px;color:#555;margin-top:2px">ใบรับสินค้า / ใบแจ้งยอดชำระ</div></div>
+    <div style="text-align:right;font-size:11px;color:#555"><div style="font-weight:bold;font-size:14px;color:#111">{% if job %}{{ job.display_id }}{% else %}{{ booking.display_id }}{% endif %}</div><div>คิว: {{ job.queue_no|default:"—" }}</div><div>{{ booking.created_at|date:"d/m/Y H:i" }}</div></div>
+  </div>
+  <div style="border-top:2px solid #000;margin:8px 0"></div>
+  <table><tbody>
+    <tr><td class="k">ลูกค้า</td><td style="font-weight:500">{{ booking.customer.full_name }}</td></tr>
+    <tr><td class="k">เบอร์โทร</td><td>{{ booking.customer.phone_number|default:"—" }}</td></tr>
+    <tr><td class="k">สินค้า</td><td style="font-weight:500">{{ booking.brand_name }} {{ booking.model }}</td></tr>
+    <tr><td class="k">ประเภท</td><td>{{ booking.category }}</td></tr>
+    <tr><td class="k">Serial</td><td>{{ job.serial_number|default:"—" }}</td></tr>
+    <tr><td class="k">อุปกรณ์</td><td>{{ job.accessories|default:"—" }}</td></tr>
+    <tr><td class="k">หมายเหตุ</td><td>{{ booking.note|default:"—" }}</td></tr>
+    <tr><td class="k">การชำระเงิน</td><td>{{ payment_label|default:"—" }} ({{ booking.payment_status_label }})</td></tr>
+    <tr><td class="k">ยอดรวม</td><td style="font-weight:bold">{{ booking.total|baht }} บาท</td></tr>
+  </tbody></table>
+  <div style="border-top:1px dashed #999;margin:12px 0"></div>
+  <div style="font-size:11px;display:flex;justify-content:space-between;margin-top:16px"><span>ผู้รับสินค้า _______________</span><span>ลูกค้า _______________</span></div>
+  <div style="font-size:10px;color:#888;margin-top:8px;text-align:center">เอกสารรับเงิน/รับสินค้า ไม่ใช่ใบกำกับภาษี · Trust Lab Thailand · โทร. {{ company_phone }}</div>
+</div>
+{% endblock %}

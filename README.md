@@ -82,6 +82,9 @@ DATABASE_URL=postgres:///trustlab python manage.py migrate --fake-initial
 | แจ้ง LINE กลุ่มเมื่อมีการจอง, outbox แจ้งพนักงาน | `apps/notifications/tasks.py` |
 | สร้าง PDF ใบรับรอง, รายงาน, ใบปะหน้า, ZIP รูป | `apps/core/tasks.py` → builders ใน services |
 
+ใบเสร็จ / ใบกำกับภาษี / ใบรับสินค้า เป็นหน้าพิมพ์ HTML (เหมือนเว็บเดิม) ไม่ต้องผ่าน Celery: `apps/bookings/services/tax_document_service.py`
+ข้อมูลผู้ขายบนเอกสารตั้งได้ใน `.env` (`COMPANY_*`)
+
 หน้าเว็บขอไฟล์ → ได้ `status_url` → `TL.waitForFile()` รอจนพร้อม แล้วดาวน์โหลด
 
 ## สิ่งที่ยังไม่ได้ย้าย (เฟสถัดไป)

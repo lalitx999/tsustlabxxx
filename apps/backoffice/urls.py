@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import admin_pages as admin, bookings, dashboard, jobs, pages
+from .views import admin_pages as admin, bookings, dashboard, documents, jobs, pages
 
 app_name = 'backoffice'
 
@@ -24,6 +24,10 @@ urlpatterns = [
     path('bookings/<str:pk>/cancel/', bookings.booking_cancel, name='booking_cancel'),
     path('bookings/<str:pk>/photos/', jobs.booking_photos_add, name='booking_photos_add'),
     path('bookings/<str:pk>/photos/<int:photo_id>/delete/', jobs.booking_photo_delete, name='booking_photo_delete'),
+    path('bookings/<str:pk>/documents/', documents.document_issue, name='document_issue'),
+    path('bookings/<int:pk>/intake-slip/', documents.intake_print, name='intake_print'),
+    path('documents/<int:pk>/print/', documents.document_print, name='document_print'),
+    path('documents/<int:pk>/void/', documents.document_void, name='document_void'),
     path('cancellations/<int:pk>/review/', bookings.cancellation_review, name='cancellation_review'),
 
     # Jobs & inspection

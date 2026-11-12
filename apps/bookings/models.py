@@ -107,3 +107,40 @@ class CancellationRequest(models.Model):
 
     class Meta:
         db_table = 'api_cancellationrequest'
+
+
+class TaxDocument(models.Model):
+    """A receipt or tax invoice issued for a paid booking. Numbers are fixed once issued."""
+    RECEIPT = 'receipt'
+    TAX_INVOICE = 'tax_invoice'
+    TYPE_CHOICES = [
+        (RECEIPT, 'ใบกำกับภาษีอย่างย่อ / ใบเสร็จรับเงิน'),
+        (TAX_INVOICE, 'ใบกำกับภาษี'),
+    ]
+    PREFIX = {RECEIPT: 'RC', TAX_INVOICE: 'INV'}
+
+    booking = models.ForeignKey(Booking, on_delete=models.PROTECT, related_name='tax_documents')
+    doc_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    number = models.CharField(max_length=30, unique=True)
+    buyer_name = models.CharField(max_length=255, blank=True, default='')
+    buyer_tax_id = models.CharField(max_length=20, blank=True, default='')
+    buyer_branch = models.CharField(max_length=100, blank=True, default='')
+    buyer_address = models.TextField(blank=True, default='')
+    amounts = models.JSONField(default=dict)
+    issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='issued_tax_documents')
+    issued_at = models.DateTimeField(auto_now_add=True)
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='voided_tax_documents')
+    void_reason = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'tax_documents'
+        constraints = [
+            models.UniqueConstraint(fields=['booking', 'doc_type'], condition=models.Q(voided_at__isnull=True),
+                                    name='one_active_tax_document_per_type'),
+        ]
+
+    def __str__(self):
+        return self.number

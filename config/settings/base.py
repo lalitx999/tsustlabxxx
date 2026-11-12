@@ -147,6 +147,13 @@ THAI_FONT_PATH = env('THAI_FONT_PATH', default='')
 REVIEW_VIDEO_URL = env('REVIEW_VIDEO_URL', default='')
 EXTERNAL_HTTP_TIMEOUT = 10
 
+# Seller details printed on receipts and tax invoices (defaults = the old site's values).
+COMPANY_NAME = env('COMPANY_NAME', default='') or 'บริษัท เซอร์ติฟิเคชั่น แอนด์ อินสเปคชั่น (ไทยแลนด์) จำกัด (สำนักงานใหญ่)'
+COMPANY_ADDRESS_LINE1 = env('COMPANY_ADDRESS_LINE1', default='') or '388 อาคารสยามสแควร์วัน ห้อง MS1107 ชั้น 1 ถนนพระราม 1'
+COMPANY_ADDRESS_LINE2 = env('COMPANY_ADDRESS_LINE2', default='') or 'แขวงปทุมวัน เขตปทุมวัน กรุงเทพมหานคร 10330'
+COMPANY_TAX_ID = env('COMPANY_TAX_ID', default='') or '0105569150179'
+COMPANY_PHONE = env('COMPANY_PHONE', default='') or '0640678666'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

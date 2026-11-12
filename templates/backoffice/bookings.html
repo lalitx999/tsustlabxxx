@@ -21,6 +21,7 @@
 </div>
 {% endblock %}
 {% block page_scripts %}
+{% include 'backoffice/_documents.html' %}
 <script>
 (function () {
   const BO = '{% url "backoffice:home" %}';
@@ -63,6 +64,7 @@
     if (photos) html += '<div><label class="bo-lbl">รูปถ่ายสินค้า</label><div class="row g-2">' + photos + '</div></div>';
     if (slip) html += '<div><label class="bo-lbl">สลิปการโอน</label><a href="' + TL.esc(slip) + '" target="_blank"><img src="' + TL.esc(slip) + '" style="max-height:220px" class="r-xl border" alt="slip"></a></div>';
     if (b.cancellation) html += '<div class="p-3 r-xl text-xs" style="background:#fffbeb;border:1px solid #fde68a;color:#92400e">คำขอยกเลิก: ' + TL.esc(b.cancellation.status) + ' • ' + TL.esc(b.cancellation.reason) + '</div>';
+    html += '<div id="docsBox"></div>';
     if (b.status !== 'cancelled') {
       html += '<div class="d-flex flex-wrap gap-2 pt-2 border-top border-n100">';
       if (!b.job_id) html += '<button class="bo-btn dark" data-act="checkin">' + TL.icon('clipboard-check') + ' รับสินค้า / ออกคิว</button>';
@@ -71,6 +73,7 @@
       html += '<button class="bo-btn ms-auto" style="color:#dc2626;border-color:#fecaca" data-act="cancel">' + TL.icon('ban') + ' ยืนยันการยกเลิก Booking</button></div><div id="actBox"></div>';
     }
     document.getElementById('mBody').innerHTML = html;
+    TLDocs.render(document.getElementById('docsBox'), b);
     modal.show();
   }
   async function act(name) {

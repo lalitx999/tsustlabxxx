@@ -1,0 +1,34 @@
+{% extends 'backoffice/print/base.html' %}{% load static ui %}
+{% block title %}ใบกำกับภาษีอย่างย่อ / ใบเสร็จรับเงิน {{ doc.number }}{% endblock %}
+{% block page_style %}<style>@page { size: 80mm auto; margin: 0; }</style>{% endblock %}
+{% block body_class %}slip{% endblock %}
+{% block content %}
+{% if doc.voided_at %}<div class="doc-void">เอกสารนี้ถูกยกเลิกแล้ว — {{ doc.void_reason }}</div>{% endif %}
+<div class="slip-wrap">
+  <div class="center">
+    <img src="{% static 'img/logo-print.png' %}" alt="Trust Lab" style="height:32px;margin-bottom:4px">
+    <div class="logo-text">TRUST LAB THAILAND</div>
+    <div style="font-size:9px;color:#555;margin-top:2px">เลขประจำตัวผู้เสียภาษี {{ company.tax_id }}</div>
+  </div>
+  <div class="sep"></div>
+  <div class="center" style="font-size:12px;font-weight:700;margin:4px 0">ใบกำกับภาษีอย่างย่อ / ใบเสร็จรับเงิน{% if doc.voided_at %} (ยกเลิก){% endif %}</div>
+  <div class="row"><span class="label">เลขที่:</span><span style="font-weight:700">{{ doc.number }}</span></div>
+  <div class="row"><span class="label">วันที่:</span><span>{{ doc.issued_at|date:"d/m/Y H:i" }}</span></div>
+  <div class="row"><span class="label">อ้างอิง:</span><span>{{ booking.display_id }}{% if job %} · คิว {{ job.queue_no }}{% endif %}</span></div>
+  <div class="row"><span class="label">พนักงานขาย:</span><span>{{ seller }}</span></div>
+  <div class="sep"></div>
+  <div class="row" style="font-weight:700;border-bottom:1px solid #ddd;padding-bottom:2px"><span>รายการ</span><span>จำนวน</span><span>รวม</span></div>
+  {% for line in amounts.lines %}
+  <div class="row"><span>{{ line.name }}{% if forloop.first and product %} ({{ product }}){% endif %}</span><span>{{ line.quantity }} x ฿{{ line.price|baht }}</span><span style="font-weight:700">฿{{ line.price|baht }}</span></div>
+  {% endfor %}
+  <div class="sep"></div>
+  <div class="row"><span class="label">รวมเป็นเงิน:</span><span>฿{{ amounts.gross|baht }}</span></div>
+  <div class="row"><span class="label">ส่วนลด:</span><span>฿{{ amounts.discount|baht }}</span></div>
+  <div class="row"><span class="label">จำนวนเงินหลังหักส่วนลด:</span><span>฿{{ amounts.after_discount|baht }}</span></div>
+  <div class="row"><span class="label">ภาษีมูลค่าเพิ่ม 7%:</span><span>฿{{ amounts.vat|baht }}</span></div>
+  <div class="total-bar"><span>รวมทั้งสิ้น</span><span>฿{{ amounts.total|baht }}</span></div>
+  <div class="row" style="margin-top:6px"><span class="label">ชำระโดย:</span><span>{{ payment_label }}</span></div>
+  <div class="sep"></div>
+  <div class="footer">ราคารวมภาษีมูลค่าเพิ่มแล้ว<br>ขอบคุณที่ใช้บริการ<br>THANK YOU</div>
+</div>
+{% endblock %}

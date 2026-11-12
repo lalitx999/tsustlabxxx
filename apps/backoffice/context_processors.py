@@ -1,5 +1,7 @@
 from django.core.cache import cache
 
+from apps.core.permissions import is_admin
+
 from .menu import menu_for
 
 
@@ -21,4 +23,5 @@ def backoffice(request):
     match = getattr(request, 'resolver_match', None)
     if not match or match.namespace != 'backoffice' or not request.user.is_authenticated:
         return {}
-    return {'bo_menu': menu_for(request.user, f'{match.namespace}:{match.url_name}'), 'bo_alerts': _alert_count()}
+    return {'bo_menu': menu_for(request.user, f'{match.namespace}:{match.url_name}'), 'bo_alerts': _alert_count(),
+            'bo_is_admin': is_admin(request.user)}

@@ -82,12 +82,14 @@
         <p class="mb-3 text-sm text-n500">ตรวจสอบรายการและยอดชำระ ระบบจะสร้างงานพร้อมเลขคิวทันที</p>
         <button type="submit" class="bo-btn dark w-100 justify-content-center py-3" id="submitBtn">{% icon 'check' 'i-4' %} <span id="submitLabel">สร้างงาน / รอชำระเงิน</span></button>
         <div id="resultBox" class="mt-3"></div>
+        <div id="docsBox" class="mt-3"></div>
       </section>
     </div>
   </form>
 </div>
 {% endblock %}
 {% block page_scripts %}
+{% include 'backoffice/_documents.html' %}
 <script>
 (function () {
   const BO = '{% url "backoffice:home" %}';
@@ -131,12 +133,13 @@
       const b = res.data;
       show('wkNotice', res.message + ' • ' + b.display_id + ' • คิว ' + b.job_display_id);
       document.getElementById('resultBox').innerHTML = '<div class="r-lg p-3 text-sm" style="background:#ecfdf5;color:#065f46"><div class="fw-bold">' + TL.esc(b.display_id) + ' • ' + TL.esc(b.job_display_id) + '</div>ยอด ' + TL.baht(b.total) + ' บาท • ' + TL.esc(b.payment_status_label) + '</div>';
+      TLDocs.render(document.getElementById('docsBox'), b);
       form.reset(); key = TL.uuid(); quoteBox.textContent = 'กรอกแบรนด์เพื่อคำนวณราคา'; document.getElementById('payFields').hidden = true;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) { show('wkError', err.message); }
     TL.busy(btn, false);
   });
-  document.getElementById('newBtn').addEventListener('click', () => { form.reset(); key = TL.uuid(); quoteBox.textContent = 'กรอกแบรนด์เพื่อคำนวณราคา'; document.getElementById('resultBox').innerHTML = ''; document.getElementById('historyBox').hidden = true; form.hidden = false; });
+  document.getElementById('newBtn').addEventListener('click', () => { form.reset(); key = TL.uuid(); quoteBox.textContent = 'กรอกแบรนด์เพื่อคำนวณราคา'; document.getElementById('resultBox').innerHTML = ''; document.getElementById('docsBox').innerHTML = ''; document.getElementById('historyBox').hidden = true; form.hidden = false; });
   document.getElementById('historyBtn').addEventListener('click', async () => {
     try {
       const rows = (await TL.api(BO + 'bookings/rows/')).data.filter(r => r.channel === 'walk_in').slice(0, 30);

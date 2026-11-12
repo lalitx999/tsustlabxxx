@@ -1,8 +1,9 @@
 """Walk-in counter and booking management."""
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.bookings.selectors import booking_selector
+from apps.bookings.selectors import booking_selector, tax_document_selector
 from apps.bookings.services import cancellation_service, payment_service
 from apps.catalog.models import CATEGORIES
 from apps.catalog.selectors.catalog_selector import brand_names, enabled_packages
@@ -86,6 +87,10 @@ def booking_get(request, pk):
     data['photos'] = booking_selector.photo_urls(booking)
     data['slip_url'] = booking.payment_slip.url if booking.payment_slip else ''
     data['legacy_slip'] = booking.payment_evidence if booking.payment_evidence.startswith('data:image') else ''
+    data['documents'] = [dict(tax_document_selector.serialize_document(d),
+                              print_url=reverse('backoffice:document_print', args=[d.pk]))
+                         for d in tax_document_selector.documents_for_booking(booking.pk)]
+    data['intake_url'] = reverse('backoffice:intake_print', args=[booking.pk])
     return data
 
 

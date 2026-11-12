@@ -1,0 +1,65 @@
+{% load ui %}
+{# Receipt / tax invoice / intake slip panel. Usage: TLDocs.render(container, booking) where booking comes from bookings/<pk>/ or walk-in/create/. #}
+<script>
+window.TLDocs = (function () {
+  const BASE = '{% url "backoffice:home" %}';
+  const IS_ADMIN = {{ bo_is_admin|yesno:'true,false' }};
+  const PAID = { receipt: ['paid'], tax_invoice: ['paid', 'invoiced'] };
+  const field = (name, label, ph, cls) => '<div class="' + cls + '"><label class="text-xs fw-semibold text-n700 w-100">' + label +
+    '<input name="' + name + '" class="bo-in" placeholder="' + ph + '"' + (name === 'buyer_branch' ? ' value="สำนักงานใหญ่"' : '') + '></label></div>';
+
+  function docRow(d) {
+    return '<li class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 border-top text-sm">' +
+      '<span><b class="font-monospace' + (d.voided ? ' text-decoration-line-through text-n400' : '') + '">' + TL.esc(d.number) + '</b> <span class="text-n500">' + TL.esc(d.label) + '</span>' +
+      (d.voided ? ' <span class="pill p-red">ยกเลิกแล้ว</span>' : '') + '</span>' +
+      '<span class="d-flex gap-2"><a class="bo-btn-xs" target="_blank" rel="noopener" href="' + d.print_url + '">' + TL.icon('printer') + ' พิมพ์</a>' +
+      (IS_ADMIN && !d.voided ? '<button type="button" class="bo-btn-xs danger" data-void="' + d.id + '">' + TL.icon('ban') + ' ยกเลิก</button>' : '') + '</span></li>';
+  }
+
+  function render(box, b) {
+    const canReceipt = PAID.receipt.includes(b.payment_status) && b.status !== 'cancelled';
+    const canInvoice = PAID.tax_invoice.includes(b.payment_status) && b.status !== 'cancelled';
+    const docs = b.documents || [];
+    box.innerHTML = '<div class="d-grid gap-3 r-xl border border-n200 bg-white p-3 text-start">' +
+      '<div class="d-flex align-items-center justify-content-between gap-2"><h3 class="text-sm fw-semibold mb-0">' + TL.icon('receipt') + ' เอกสาร / ใบเสร็จ</h3>' +
+      '<a class="bo-btn-xs" target="_blank" rel="noopener" href="' + BASE + 'bookings/' + b.id + '/intake-slip/?autoprint=1">' + TL.icon('printer') + ' ใบรับสินค้า</a></div>' +
+      (canInvoice ? '<div class="row g-2 r-lg bg-n50 p-2 m-0" data-buyer>' +
+        '<div class="col-12 text-xs text-n500">ข้อมูลผู้ซื้อสำหรับใบกำกับภาษี (เว้นว่างได้ ระบบใช้ชื่อลูกค้า)</div>' +
+        field('buyer_name', 'ชื่อผู้ซื้อ / บริษัท', 'ชื่อ-นามสกุล หรือ บริษัท จำกัด', 'col-12 col-sm-6') +
+        field('buyer_tax_id', 'เลขประจำตัวผู้เสียภาษี 13 หลัก', 'เช่น 0105569150000', 'col-12 col-sm-6') +
+        field('buyer_address', 'ที่อยู่สำหรับออกใบกำกับภาษี', 'บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์', 'col-12 col-sm-8') +
+        field('buyer_branch', 'สาขา', 'สำนักงานใหญ่ หรือ สาขา 00001', 'col-12 col-sm-4') + '</div>' : '') +
+      '<div class="d-flex flex-wrap gap-2">' +
+        '<button type="button" class="bo-btn flex-fill justify-content-center" data-issue="tax_invoice"' + (canInvoice ? '' : ' disabled') + '>' + TL.icon('file-text') + ' ใบกำกับภาษี (A4 2 ชุด)</button>' +
+        '<button type="button" class="bo-btn flex-fill justify-content-center" data-issue="receipt"' + (canReceipt ? '' : ' disabled') + '>' + TL.icon('receipt') + ' ใบเสร็จอย่างย่อ (80mm)</button></div>' +
+      (canReceipt || canInvoice ? '' : '<p class="mb-0 text-xs text-n500">รับชำระเงินก่อน จึงออกใบเสร็จ / ใบกำกับภาษีได้</p>') +
+      (docs.length ? '<ul class="list-unstyled mb-0">' + docs.map(docRow).join('') + '</ul>' : '') + '</div>';
+
+    box.querySelectorAll('[data-issue]').forEach(btn => btn.addEventListener('click', async () => {
+      const body = { doc_type: btn.dataset.issue };
+      const buyer = box.querySelector('[data-buyer]');
+      if (buyer) buyer.querySelectorAll('input').forEach(i => { body[i.name] = i.value; });
+      const win = window.open('about:blank', '_blank');  // open now so the browser does not block the pop-up
+      TL.busy(btn, true);
+      try {
+        const res = await TL.api(BASE + 'bookings/' + b.id + '/documents/', { method: 'POST', body: body });
+        TL.toast(res.message);
+        if (win) win.location = res.data.print_url + '?autoprint=1'; else window.open(res.data.print_url + '?autoprint=1', '_blank');
+        b.documents = [res.data].concat((b.documents || []).filter(d => d.id !== res.data.id));
+        TL.busy(btn, false); render(box, b);
+      } catch (err) { if (win) win.close(); TL.toast(err.message, 'error'); TL.busy(btn, false); }
+    }));
+    box.querySelectorAll('[data-void]').forEach(btn => btn.addEventListener('click', async () => {
+      const reason = prompt('เหตุผลที่ยกเลิกเอกสารนี้ (เช่น เลขผู้เสียภาษีผิด)');
+      if (!reason) return;
+      try {
+        const res = await TL.api(BASE + 'documents/' + btn.dataset.void + '/void/', { method: 'POST', body: { reason: reason } });
+        TL.toast(res.message);
+        b.documents = (b.documents || []).map(d => d.id === res.data.id ? Object.assign(d, { voided: true }) : d);
+        render(box, b);
+      } catch (err) { TL.toast(err.message, 'error'); }
+    }));
+  }
+  return { render: render };
+})();
+</script>

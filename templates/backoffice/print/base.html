@@ -1,0 +1,20 @@
+{% load static ui %}<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{% block title %}{% endblock %} - Trust Lab</title>
+<link rel="icon" href="{% static 'img/favicon.ico' %}">
+<link rel="stylesheet" href="{% static 'css/print-docs.css' %}">
+{% block page_style %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<div class="doc-toolbar">
+  <button type="button" onclick="window.print()">{% icon 'printer' %} พิมพ์</button>
+  <button type="button" class="ghost" onclick="window.close()">{% icon 'x' %} ปิด</button>
+</div>
+{% block content %}{% endblock %}
+{% if autoprint %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 500); });</script>{% endif %}
+</body>
+</html>
